@@ -1,0 +1,38 @@
+ProjectName: 'TestProject'  # 项目名称
+
+# 服务器配置
+ServerConfig:
+  host: '0.0.0.0'  # 主机
+  port: 6868  # 端口
+  workers: 1  # 进程数
+  log_dir: 'logs'  # 日志目录路径
+  file_max_size: 3145728  # 文件最大上传大小（字节）
+  token_expire: 604800  # Token有效期（秒），用户登录有效期
+  token_name: 'Authorization'  # Token在Header中的名称的键名
+
+# 邮箱配置
+EmailConfig:
+  email_from: 'xxx@163.com'  # 发件邮箱
+  email_password: 'XXX'  # 邮箱密码/SMTP授权码
+  email_code_expire: 300  # 邮箱验证码有效期（秒）
+
+# 数据库配置
+DatabaseConfig:
+  # Mysql配置
+  MysqlConfig:
+    host: '127.0.0.1'  # 主机
+    port: 3306  # 端口
+    database_name: 'test_project'  # 数据库名称
+    username: 'root'  # 用户名
+    password: 'root'  # 密码
+
+  # Sqlalchemy配置
+  SqlalchemyConfig:
+    on_echo: false  # 是否开启查询日志
+
+  # Redis配置
+  RedisConfig:
+    host: '127.0.0.1'  # 主机
+    port: 6379  # 端口
+    password: '' # 密码
+    db: 6  # 数据库

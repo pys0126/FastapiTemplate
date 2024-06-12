@@ -1,0 +1,8 @@
+fastapi[all]
+uvicorn
+pyyaml
+redis
+pyjwt
+sqlalchemy
+zmail
+httpx
