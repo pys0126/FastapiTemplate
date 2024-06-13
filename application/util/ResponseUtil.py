@@ -1,13 +1,15 @@
 from application.enumeration.StatusCodeEnum import StatusCodeEnum
-from flask import Response, jsonify
-from typing import Union
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from typing import Optional, Any
+from starlette import status
 
 
 class ResponseUtil:
     """
     返回Response类
     """
-    def __init__(self, code: int = StatusCodeEnum.SUCCESS.value, data: Union[dict, list, str, int, None] = None, message: str = "ok"):
+    def __init__(self, code: int = StatusCodeEnum.SUCCESS.value, data: Optional[Any] = None, message: str = "ok"):
         """
         构造方法
         :param code: 状态码
@@ -15,23 +17,21 @@ class ResponseUtil:
         :param message: 返回信息
         """
         self.code: int = code
-        self.data: Union[dict, list, str, None] = data
+        self.data: Optional[Any] = data
         self.message: str = message
 
-    def success(self) -> Response:
+    def success(self) -> JSONResponse:
         """
         成功Response
         :return: Response对象
         """
-        response: Response = jsonify(code=self.code, data=self.data, message=self.message)
-        response.status_code = 200
-        return response
+        response: dict = dict(code=self.code, data=self.data, message=self.message)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response))
 
-    def fail(self) -> Response:
+    def fail(self) -> JSONResponse:
         """
         失败Response
         :return: Response对象
         """
-        response: Response = jsonify(code=self.code, message=self.message)
-        response.status_code = 500
-        return response
+        response: dict = dict(code=self.code, data=self.data, message=self.message)
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=jsonable_encoder(response))

@@ -1,28 +1,20 @@
-from application.logic import IndexLogic
-from flask import Blueprint, Response, request
+from fastapi import APIRouter, status
+from starlette.responses import JSONResponse
+from application.model.UserModel import UserModel
 from application.util.ResponseUtil import ResponseUtil
 
+# 创建路由
+router: APIRouter = APIRouter(tags=["index"],
+                              responses={status.HTTP_404_NOT_FOUND: {"description": "Not Found"}})
 
-class IndexController:
+
+@router.get("/")
+@router.get("/index")
+async def root() -> JSONResponse:
     """
-    杂项
+    主页/根路径
+    :return:
     """
-    def __init__(self) -> None:
-        self.logic: IndexLogic = IndexLogic  # 逻辑层包，不需要实例化
-        self.blue_print: Blueprint = Blueprint("index", __name__)
-        self.blue_print.add_url_rule("/", view_func=self.home)
-        self.blue_print.add_url_rule("/index", view_func=self.home)
-        self.blue_print.add_url_rule("/verification_code", view_func=self.send_verification_code, methods=["POST"])
+    user_model: UserModel = await UserModel.filter(id=1).first()
 
-    def send_verification_code(self) -> Response:
-        """
-        发送验证码
-        """
-        IndexLogic.send_verification_code(email=request.args.get("email"))
-        return ResponseUtil().success()
-
-    def home(self) -> Response:
-        """
-        主页，无实际用途
-        """
-        return ResponseUtil().success()
+    return ResponseUtil().success()

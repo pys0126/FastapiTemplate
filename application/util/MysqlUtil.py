@@ -1,33 +1,26 @@
-from datetime import datetime
-from sqlalchemy import DateTime
-from flask_sqlalchemy import SQLAlchemy
-from application.util.TimeUtil import now_format_datetime
-from sqlalchemy.orm import DeclarativeBase, scoped_session, Session, mapped_column, Mapped
+from application.config.DatabaseConfig import MysqlConfig
 
-
-class BaseModel(DeclarativeBase):
-    """
-    模型基类
-    """
-    # 更新时间，默认为now_format_datetime生成，更新时为now_format_datetime生成
-    update_datetime: Mapped[datetime] = mapped_column(DateTime, insert_default=now_format_datetime(),
-                                                      onupdate=now_format_datetime(),
-                                                      nullable=True, comment="更新时间")
-    # 创建时间，默认为now_format_datetime生成的
-    create_datetime: Mapped[datetime] = mapped_column(DateTime, insert_default=now_format_datetime(), nullable=True,
-                                                      comment="创建时间")
-
-    def to_dict(self) -> dict:
-        """
-        转为字典
-        :return:
-        """
-        # 去除_sa_instance_state字段
-        self.__dict__.pop("_sa_instance_state")
-        return self.__dict__
-
-
-# 初始化SQLAlchemy
-mysql_db: SQLAlchemy = SQLAlchemy(model_class=BaseModel)
-# 获得会话
-mysql_session: scoped_session[Session] = mysql_db.session
+# 创建数据库配置
+DATABASE_CONFIG: dict = {
+    "connections": {
+        "default": {
+            "engine": "tortoise.backends.mysql",  # MySQL or Mariadb
+            "credentials": {
+                "host": MysqlConfig.host,
+                "port": MysqlConfig.port,
+                "user": MysqlConfig.username,
+                "password": MysqlConfig.password,
+                "database": MysqlConfig.database_name,
+                "echo": False
+            }
+        }
+    },
+    "apps": {
+        "models": {
+            "models": MysqlConfig.models,
+            "default_connection": "default"
+        }
+    },
+    "use_tz": False,  # 建议不要开启，不然存储日期时会有很多坑，时区转换在项目中手动处理更稳妥。
+    "timezone": "Asia/Shanghai"
+}

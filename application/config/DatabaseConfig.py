@@ -18,14 +18,9 @@ class MysqlConfig:
     username: str = MYSQL_CONFIG.get("username", "root")  # 数据库用户名
     password: str = MYSQL_CONFIG.get("password", "root")  # 数据库密码
     database_name: str = MYSQL_CONFIG.get("database_name", "task_system")  # 数据库名称
-
-
-class SqlalchemyConfig:
-    """
-    Sqlalchemy配置
-    """
-    SQLALCHEMY_CONFIG: dict = DATABASE_CONFIG.get("SqlalchemyConfig")  # 获取Mysql数据库配置项
-    on_echo: bool = SQLALCHEMY_CONFIG.get("on_echo")  # 是否开启查询日志
+    models: list = [  # 模型类列表
+        "application.model.UserModel"
+    ]
 
 
 class RedisConfig:

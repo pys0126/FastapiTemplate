@@ -3,6 +3,7 @@ uvicorn
 pyyaml
 redis
 pyjwt
-sqlalchemy
+pymysql
+tortoise-orm[asyncmy]
 zmail
 httpx

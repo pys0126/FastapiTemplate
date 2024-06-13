@@ -26,10 +26,6 @@ DatabaseConfig:
     username: 'root'  # 用户名
     password: 'root'  # 密码
 
-  # Sqlalchemy配置
-  SqlalchemyConfig:
-    on_echo: false  # 是否开启查询日志
-
   # Redis配置
   RedisConfig:
     host: '127.0.0.1'  # 主机

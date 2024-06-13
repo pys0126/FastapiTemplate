@@ -3,15 +3,16 @@ from application.util.TimeUtil import *
 import os
 
 
-def write_error_log(log_message: str) -> None:
+def write_error_log(log_message: str, traceback: str = "") -> None:
     """
     写入异常日志
     :param log_message: 日志信息
+    :param traceback: 堆栈信息
     :return:
     """
     log_dir: str = ServerConfig.log_dir
     log_file: str = os.path.join(log_dir, f"{now_format_date()}.error.log")
-    log_message = f"{now_format_datetime()} - 错误信息 => \n {log_message}\n"
+    log_message = f"{now_format_datetime()} - {log_message} - 异常堆栈信息 =>\n{traceback}"
     with open(file=log_file, mode="a+", encoding="utf-8") as f:
         f.write(log_message)
 

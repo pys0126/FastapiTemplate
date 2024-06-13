@@ -1,48 +1,27 @@
 import os
-from flask import Flask
-from flask_cors import CORS
-from sqlalchemy.engine import URL
-from werkzeug.exceptions import MethodNotAllowed
-from application.util.StringUtil import random_uuid
+from fastapi import FastAPI
+from tortoise.contrib.fastapi import register_tortoise
+from application.controller import IndexController
+from application.exception import low_exception_handler
+from application.util.MysqlUtil import DATABASE_CONFIG
 from application.config.ServerConfig import ServerConfig
 from application.config.DatabaseConfig import RedisConfig
-from application.exception.TypeException import TypeException
-from application.util.MysqlUtil import mysql_db, mysql_session
-from application.exception.BasicException import BasicException
-from application.controller.UserController import UserController
 from application.enumeration.StatusCodeEnum import StatusCodeEnum
-from application.exception.MethodException import MethodException
-from application.controller.IndexController import IndexController
-from application.config.DatabaseConfig import MysqlConfig, SqlalchemyConfig
-
+from application.exception.BasicException import BasicException
+from fastapi.middleware.cors import CORSMiddleware
 
 # 创建日志目录（如果不存在）
 os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
-# 创建Flask实例
-app: Flask = Flask(__name__)
-# 设置SECRET_KEY密钥，session用
-app.config["SECRET_KEY"] = random_uuid()
-CORS(app=app)  # 设置允许跨越
-# 连接信息（使用URL构造对象，防止有非法字符导致连接出错）
-app.config["SQLALCHEMY_DATABASE_URI"] = URL.create(drivername="mysql+pymysql", username=MysqlConfig.username,
-                                                   password=MysqlConfig.password, host=MysqlConfig.host,
-                                                   port=MysqlConfig.port, database=MysqlConfig.database_name)
-# 配置是否打印SQL语句
-app.config["SQLALCHEMY_ECHO"] = SqlalchemyConfig.on_echo
-# 将Flask实例绑定到数据库
-mysql_db.init_app(app=app)
-# 创建数据表（如果不存在）
-with app.app_context():
-    # 导入所有待创建的数据表
-    from application.model import *
-    mysql_db.create_all()
 
-# 异常注册
-app.register_error_handler(BasicException, BasicException.exception_handle)
-app.register_error_handler(Exception, BasicException.exception_handle)
-app.register_error_handler(TypeError, TypeException.exception_handle)
-app.register_error_handler(MethodNotAllowed, MethodException.exception_handle)
+# 创建FastAPI实例
+app: FastAPI = FastAPI(title="Test", description="Test System")
+# 注册Tortoise ORM
+register_tortoise(app=app, config=DATABASE_CONFIG, generate_schemas=True)
 
-# 蓝图注册
-app.register_blueprint(IndexController().blue_print, url_prefix="/")
-app.register_blueprint(UserController().blue_print, url_prefix="/user")
+# 配置跨域中间件，所有域都可以访问
+app.add_middleware(middleware_class=CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# 配置路由
+app.include_router(router=IndexController.router)
+# 配置异常
+app.add_exception_handler(exc_class_or_status_code=BasicException, handler=BasicException.exception_handler)
+app.add_exception_handler(exc_class_or_status_code=Exception, handler=low_exception_handler)
