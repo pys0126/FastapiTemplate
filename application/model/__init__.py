@@ -24,7 +24,8 @@ class TortoiseBaseModel(Model):
         转为字典
         :return:
         """
-        self.__dict__.pop("_custom_generated_pk")
-        self.__dict__.pop("_await_when_save")
-        self.__dict__.pop("_partial")
+        remove_keys: list = ["_custom_generated_pk", "_await_when_save", "_partial", "_saved_in_db"]
+        for key in remove_keys:
+            if key in self.__dict__:
+                self.__dict__.pop(key)
         return self.__dict__

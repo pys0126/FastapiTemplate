@@ -1,16 +1,21 @@
-from application.entity import BaseEntity
+from pydantic import EmailStr, AnyHttpUrl, BaseModel, StrictInt
+from application.enumeration.UserSexEnum import UserSexEnum
+from application.entity import BaseOutEntity
 from typing import Optional
 
 
-class UserBase(BaseEntity):
+class UserBase(BaseModel):
     """
     用户实体类 - 基类
     """
     username: str
     nickname: str
-    email: Optional[str]
-    avatar: Optional[str]
-    is_active: Optional[bool]
+    email: Optional[EmailStr] = None
+    phone: Optional[StrictInt] = None
+    age: StrictInt = 18
+    avatar: AnyHttpUrl = "https://c-ssl.duitang.com/uploads/blog/202206/12/20220612164733_72d8b.jpg"
+    sex: str = UserSexEnum.OTHER.value
+    is_active: bool = True
 
 
 class UserIn(UserBase):
@@ -20,7 +25,7 @@ class UserIn(UserBase):
     password: str
 
 
-class UserOut(UserBase):
+class UserOut(BaseOutEntity, UserBase):
     """
     用户输出实体类
     """

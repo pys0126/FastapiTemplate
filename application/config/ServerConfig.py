@@ -17,7 +17,6 @@ class ServerConfig:
     log_dir: str = SERVER_CONFIG.get("log_path", "logs")  # 日志目录路径
     # Token过期时间，默认7天
     token_expire: int = int(SERVER_CONFIG.get("token_expire", int(timedelta(days=7).total_seconds())))
-    token_name: str = "Authorization"  # Token在Header中的名称和session的键名
     secret_key: str = SERVER_CONFIG.get("secret_key", os.urandom(16).hex())  # Token加密密钥
 
     file_max_size: int = int(SERVER_CONFIG.get("file_max_size", 1024 * 1024 * 3))  # 文件最大上传大小（字节），默认3M
@@ -26,3 +25,9 @@ class ServerConfig:
     super_admin_username: str = SERVER_CONFIG.get("super_admin_username", "admin")  # 用户名
     super_admin_password: str = SERVER_CONFIG.get("super_admin_password", "admin")  # 密码
 
+
+class CORSConfig:
+    CORS_CONFIG: dict = ServerConfig.SERVER_CONFIG.get("CORSConfig")
+    allow_origins: list = CORS_CONFIG.get("allow_origins", ["*"])
+    allow_methods: list = CORS_CONFIG.get("allow_methods", ["*"])
+    allow_headers: list = CORS_CONFIG.get("allow_headers", ["*"])

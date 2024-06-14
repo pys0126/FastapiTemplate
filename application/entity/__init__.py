@@ -1,12 +1,12 @@
+from pydantic import BaseModel, StrictInt
 from datetime import datetime
-from pydantic import BaseModel
 from typing import Optional
 
 
-class BaseEntity(BaseModel):
+class BaseOutEntity(BaseModel):
     """
-    实体基类
+    输出实体基类
     """
-    id: Optional[int]
-    update_datetime: Optional[datetime]
-    create_datetime: Optional[datetime]
+    id: StrictInt
+    update_datetime: datetime
+    create_datetime: datetime
