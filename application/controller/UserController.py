@@ -1,4 +1,4 @@
-from application.entity.UserEntity import UserIn, UserOut
+from application.entity.UserEntity import UserAdd, UserOut
 from application.depend.TokenDepend import verify_token
 from application.util.ResponseUtil import ResponseUtil
 from fastapi.responses import JSONResponse
@@ -16,6 +16,12 @@ async def get_all_data(page: PositiveInt = 1, page_size: PositiveInt = 10) -> JS
 
 
 @router.post("/register", summary="注册用户")
-async def register(user_in: UserIn) -> JSONResponse:
-    await UserLogic.register(user_in=user_in)
+async def register(user_add: UserAdd) -> JSONResponse:
+    await UserLogic.register(user_add=user_add)
+    return ResponseUtil().success()
+
+
+@router.post("/login", summary="登录用户")
+async def login(user_add: UserAdd) -> JSONResponse:
+    await UserLogic.login(user_add=user_add)
     return ResponseUtil().success()

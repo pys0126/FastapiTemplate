@@ -3,11 +3,16 @@ ProjectName: 'TestProject'  # 项目名称
 # 服务器配置
 ServerConfig:
   host: '0.0.0.0'  # 主机
-  port: 6868  # 端口
+  port: 7878  # 端口
   workers: 1  # 进程数
   log_dir: 'logs'  # 日志目录路径
   file_max_size: 3145728  # 文件最大上传大小（字节）
   token_expire: 604800  # Token有效期（秒），用户登录有效期
+  # 跨域配置
+  CORSConfig:
+    allow_origins: ['*']
+    allow_methods: ['*']
+    allow_headers: ['*']
 
 # 邮箱配置
 EmailConfig:

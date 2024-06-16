@@ -1,6 +1,6 @@
 import traceback
 from typing import Optional
-from tortoise.models import Model
+from application.model import TortoiseBaseModel
 from application.util.LogUtil import write_error_log
 
 
@@ -8,7 +8,7 @@ class BaseMapper:
     """
     DAO层基类，提供基础的增删改查方法
     """
-    orm_model: Model = None
+    orm_model: TortoiseBaseModel = None
 
     @classmethod
     async def insert(cls, data: dict) -> bool:
@@ -22,7 +22,7 @@ class BaseMapper:
             if "id" in data.keys():
                 data.pop("id")
             # 插入数据
-            new_model: Model = await cls.orm_model.create(**data)
+            new_model: TortoiseBaseModel = await cls.orm_model.create(**data)
             await new_model.save()
             return True
         except Exception:
@@ -42,7 +42,7 @@ class BaseMapper:
             write_error_log(log_message=f"此数据更新失败：{data}", traceback=traceback.format_exc())
 
     @classmethod
-    async def delete(cls, orm_model: Model) -> None:
+    async def delete(cls, orm_model: TortoiseBaseModel) -> None:
         """
         删除数据
         :param orm_model: ORM模型
@@ -51,11 +51,11 @@ class BaseMapper:
         try:
             await orm_model.delete()
         except Exception:
-            write_error_log(log_message=f"此Model删除失败：{orm_model.to_dict()}", traceback=traceback.format_exc())
+            write_error_log(log_message=f"此TortoiseBaseModel删除失败：{orm_model.to_dict()}", traceback=traceback.format_exc())
 
 
     @classmethod
-    async def get_data_by_id(cls, data_id: int) -> Optional[Model]:
+    async def get_data_by_id(cls, data_id: int) -> Optional[TortoiseBaseModel]:
         """
         根据数据ID获取数据
         :param data_id: 数据ID
@@ -64,7 +64,7 @@ class BaseMapper:
         return await cls.orm_model.filter(id=data_id).get_or_none()
     
     @classmethod
-    async def get_data_list(cls, page: int, page_size: int) -> list[Optional[Model]]:
+    async def get_data_list(cls, page: int, page_size: int) -> list[Optional[TortoiseBaseModel]]:
         """
         获取数据列表
         :param page: 第几页

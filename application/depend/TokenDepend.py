@@ -20,6 +20,7 @@ async def verify_token(authorization: str = Header()) -> int:
         raise BasicException(status_code=StatusCodeEnum.AUTHORITY_ERROR.value, message="登陆状态失效！")
     return user_id
 
+
 async def get_current_user(user_id: int = Depends(verify_token)) -> UserModel:
     """
     获取当前用户
