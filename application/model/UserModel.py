@@ -18,11 +18,11 @@ class UserModel(TortoiseBaseModel):
     age: int = IntField(default=18, max_length=3, null=True, description="年龄，长度为3")
     sex: str = CharEnumField(enum_type=UserSexEnum, max_length=3, null=True, default=UserSexEnum.OTHER.value, 
                              description="性别枚举，男/女/其他")
-    describe: str = CharField(max_length=250, null=True, description="个人简介，250字符")
-    occupation: str = CharField(max_length=20, null=True, description="职业，20字符")
-    address: str = CharField(max_length=50, null=True, description="地址，50字符")
-    follow_ids: str = TextField(null=True, description="关注用户ID列表，用英文逗号分隔")
-    fans_ids: str = TextField(null=True, description="粉丝用户ID列表，用英文逗号分隔")
+    describe: str = CharField(default="简短介绍一下自己吧~", max_length=250, null=True, description="个人简介，250字符")
+    occupation: str = CharField(default="未知", max_length=20, null=True, description="职业，20字符")
+    address: str = CharField(default="未知", max_length=50, null=True, description="地址，50字符")
+    follow_ids: str = TextField(default="", null=True, description="关注用户ID列表，用英文逗号分隔")
+    fans_ids: str = TextField(default="", null=True, description="粉丝用户ID列表，用英文逗号分隔")
     is_disabled: bool = BooleanField(null=True, default=False, description="是否禁用")
 
     class Meta:

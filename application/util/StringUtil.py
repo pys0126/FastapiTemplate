@@ -113,6 +113,7 @@ def is_valid_uuid(text: str) -> bool:
 def is_valid_password(text: str) -> bool:
     """
     验证密码是否符合规则
+    密码最少6位，包含字母与数字，且不能包含特殊字符！
     :param text: 原文本
     :return:
     """
@@ -124,9 +125,24 @@ def is_valid_password(text: str) -> bool:
         return False
 
 
+def is_valid_phone_number(phone_number: str) -> bool:
+    """
+    验证手机号是否合法
+    :param phone_number: 原文本
+    :return:
+    """
+    # 定义手机号的正则表达式模式
+    pattern = r'^1[3-9]\d{9}$'
+    # 使用re.match()函数匹配字符串
+    if re.match(pattern, phone_number):
+        return True
+    else:
+        return False
+
+
 def generate_verification_code() -> str:
     """
-    生成6位随机验证码
+    生成6位随机数字验证码
     :return:
     """
     code: str = ""

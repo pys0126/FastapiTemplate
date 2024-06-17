@@ -8,6 +8,7 @@ ServerConfig:
   log_dir: 'logs'  # 日志目录路径
   file_max_size: 3145728  # 文件最大上传大小（字节）
   token_expire: 604800  # Token有效期（秒），用户登录有效期
+  secret_key: "93b0da7c01a615a5ec93d1ce0048e440"  # Token密钥
   # 跨域配置
   CORSConfig:
     allow_origins: ['*']

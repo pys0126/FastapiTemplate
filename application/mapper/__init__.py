@@ -37,7 +37,8 @@ class BaseMapper:
         :return:
         """
         try:
-            await cls.orm_model.update_from_dict(data=data)
+            new_model: TortoiseBaseModel = await cls.orm_model.filter(id=data.get("id")).first()
+            await new_model.update_from_dict(data=data)
         except Exception:
             write_error_log(log_message=f"此数据更新失败：{data}", traceback=traceback.format_exc())
 
@@ -51,8 +52,8 @@ class BaseMapper:
         try:
             await orm_model.delete()
         except Exception:
-            write_error_log(log_message=f"此TortoiseBaseModel删除失败：{orm_model.to_dict()}", traceback=traceback.format_exc())
-
+            write_error_log(log_message=f"此TortoiseBaseModel删除失败：{orm_model.to_dict()}",
+                            traceback=traceback.format_exc())
 
     @classmethod
     async def get_data_by_id(cls, data_id: int) -> Optional[TortoiseBaseModel]:
@@ -62,7 +63,7 @@ class BaseMapper:
         :return: 数据ORM模型
         """
         return await cls.orm_model.filter(id=data_id).get_or_none()
-    
+
     @classmethod
     async def get_data_list(cls, page: int, page_size: int) -> list[Optional[TortoiseBaseModel]]:
         """

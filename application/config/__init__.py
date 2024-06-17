@@ -9,4 +9,8 @@ with open(YAML_PATH, mode="r", encoding="u8") as file:
     YAML_CONTENT: dict = yaml.load(file, Loader=yaml.FullLoader)
 
 # 项目名称
-PROJECT_NAME: str = YAML_CONTENT.get("ProjectName", "AdminSystem")
+PROJECT_NAME: str = YAML_CONTENT.get("ProjectName", "TestSystem")
+
+# Redis Key配置
+CAPTCHA_KEY: str = "fastapi_captcha_"  # 验证码Key
+TOKEN_KEY: str = "fastapi_token_"  # Token Key
