@@ -18,6 +18,7 @@ class MysqlConfig:
     username: str = MYSQL_CONFIG.get("username", "root")  # 数据库用户名
     password: str = MYSQL_CONFIG.get("password", "root")  # 数据库密码
     database_name: str = MYSQL_CONFIG.get("database_name", "task_system")  # 数据库名称
+    auto_create_table: bool = MYSQL_CONFIG.get("auto_create_table", False)  # 是否自动创建表
     models: list = [  # 模型类列表
         "application.model.UserModel"
     ]

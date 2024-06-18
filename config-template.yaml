@@ -30,6 +30,7 @@ DatabaseConfig:
     database_name: 'test_project'  # 数据库名称
     username: 'root'  # 用户名
     password: 'root'  # 密码
+    auto_create_table: true  # 是否自动创建表
 
   # Redis配置
   RedisConfig:
