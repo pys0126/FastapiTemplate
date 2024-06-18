@@ -7,7 +7,7 @@ from application.exception import low_exception_handler
 from application.exception.BasicException import BasicException
 from application.config.ServerConfig import ServerConfig, CORSConfig
 from application.controller import CommonController, UserController, router
-from application.depend.TokenDepend import verify_token, get_current_user
+from application.dependency.TokenDependency import verify_token, get_current_user
 
 # 创建日志目录（如果不存在）
 os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
