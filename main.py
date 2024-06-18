@@ -9,7 +9,6 @@ command: str = (f"uvicorn application:app --workers {ServerConfig.workers} --hos
 if __name__ == "__main__":
     if sys.argv[1] == "dev":
         command = command + " --reload"
-    elif sys.argv[1] == "pro":
-        # 启动服务
-        os.system(command=command)
+    # 启动服务
+    os.system(command=command)
 
