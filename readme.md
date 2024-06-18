@@ -15,7 +15,8 @@
 
 ### 二、运行项目
 
-- 终端运行：`python main.py`。
+- 开发模式（自动重载）：`python main.py dev`。
+- 生产模式：`python main.py pro`。
 
 ### 三、各模块说明
 

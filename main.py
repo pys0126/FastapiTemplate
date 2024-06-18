@@ -1,4 +1,5 @@
 import os
+import sys
 from application.config.ServerConfig import ServerConfig
 
 # 定义启动命令
@@ -6,6 +7,9 @@ command: str = (f"uvicorn application:app --workers {ServerConfig.workers} --hos
                 f"--port {ServerConfig.port}")
 
 if __name__ == "__main__":
-    # 启动服务
-    os.system(command=command + " --reload")
+    if sys.argv[1] == "dev":
+        command = command + " --reload"
+    elif sys.argv[1] == "pro":
+        # 启动服务
+        os.system(command=command)
 
