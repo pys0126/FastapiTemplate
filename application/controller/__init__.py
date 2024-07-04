@@ -2,11 +2,8 @@ from application.util.ResponseUtil import ResponseUtil
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter
 
-router: APIRouter = APIRouter(
-    prefix="",
-    tags=["根路径"],
-    responses={404: {"description": "Not found"}},
-)
+router: APIRouter = APIRouter(prefix="", tags=["根路径"])
+
 
 @router.get("/")
 @router.get("/index")

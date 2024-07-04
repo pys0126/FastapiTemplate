@@ -20,8 +20,6 @@
 
 ### 三、各模块说明
 
-**注意：** 新建了ORM模型，需要在`application/config/DatabaseConfig`中`MysqlConfig`类的`models`属性添加。
-
 - 在`application/__init__.py`初始化/注册各插件。
 - 在`application/controller`自定义控制器。
 - 在`application/model`自定义模型。

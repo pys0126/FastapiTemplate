@@ -1,11 +1,25 @@
 """
 数据库配置
 """
+import os
 from application.config import YAML_CONTENT
 
 
 # 获取数据库配置
 DATABASE_CONFIG: dict = YAML_CONTENT.get("DatabaseConfig")
+
+
+def scan_models() -> list:
+    """
+    扫描ORM模型
+    :return:
+    """
+    model_dir: str = os.path.join(os.getcwd(), "application", "model")
+    result: list = []
+    for file in os.listdir(model_dir):
+        if file.endswith(".py") and file != "__init__.py":
+            result.append(f"application.model.{file[:-3]}")
+    return result
 
 
 class MysqlConfig:
@@ -19,9 +33,7 @@ class MysqlConfig:
     password: str = MYSQL_CONFIG.get("password", "root")  # 数据库密码
     database_name: str = MYSQL_CONFIG.get("database_name", "task_system")  # 数据库名称
     auto_create_table: bool = MYSQL_CONFIG.get("auto_create_table", False)  # 是否自动创建表
-    models: list = [  # 模型类列表
-        "application.model.UserModel"
-    ]
+    models: list = scan_models()  # 扫描模型
 
 
 class RedisConfig:
