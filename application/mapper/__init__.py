@@ -63,13 +63,23 @@ class BaseMapper:
         :return: 数据ORM模型
         """
         return await cls.orm_model.filter(id=data_id).get_or_none()
+    
+    @classmethod
+    async def get_data_by_fields(cls, **kwargs) -> Optional[TortoiseBaseModel]:
+        """
+        根据筛选条件获取数据
+        :param kwargs: 筛选条件（and关系）
+        :return: 数据ORM模型
+        """
+        return await cls.orm_model.filter(**kwargs).get_or_none()
 
     @classmethod
-    async def get_data_list(cls, page: int, page_size: int) -> list[Optional[TortoiseBaseModel]]:
+    async def get_data_list_by_fields(cls, page: int, page_size: int, **kwargs) -> list[Optional[TortoiseBaseModel]]:
         """
         获取数据列表
         :param page: 第几页
         :param page_size: 每页多少条数据
+        :param kwargs: 筛选条件（and关系）
         :return: 数据ORM模型列表
         """
-        return await cls.orm_model.all().limit(page_size).offset((page - 1) * page_size)
+        return await cls.orm_model.filter(**kwargs).all().limit(page_size).offset((page - 1) * page_size)

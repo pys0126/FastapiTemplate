@@ -119,17 +119,17 @@ async def login(user_login: UserLogin) -> str:
         if not is_valid_password(text=user_login.password):
             raise BasicException(status_code=StatusCodeEnum.BAD_REQUEST_ERROR.value,
                                  message="密码最少6位，包含字母与数字，且不能包含特殊字符！")
-        user_model = await UserMapper.get_data_by_username(username=user_login.username)
+        user_model = await UserMapper.get_data_by_fields(username=user_login.username)
     elif user_login.login_type == "email":
         # 验证邮箱格式
         if not is_valid_email(text=user_login.username):
             raise BasicException(status_code=StatusCodeEnum.BAD_REQUEST_ERROR.value, message="邮箱格式错误！")
-        user_model = await UserMapper.get_data_by_email(email=user_login.username)
+        user_model = await UserMapper.get_data_by_fields(email=user_login.username)
     elif user_login.login_type == "phone":
         # 验证手机号格式
         if not is_valid_phone_number(phone_number=user_login.username):
             raise BasicException(status_code=StatusCodeEnum.BAD_REQUEST_ERROR.value, message="手机号格式错误！")
-        user_model = await UserMapper.get_data_by_phone(phone=int(user_login.username))
+        user_model = await UserMapper.get_data_by_fields(phone=int(user_login.username))
     # 验证用户是否存在
     if user_model is None:
         raise BasicException(status_code=StatusCodeEnum.NOT_FOUND_ERROR.value, message="该用户未注册！")
@@ -152,7 +152,7 @@ async def get_user_by_id(user_id: int) -> UserOut:
     :param user_id: 用户ID
     :return: 用户详细信息
     """
-    user_model: UserModel = await UserMapper().get_data_by_id(data_id=user_id)
+    user_model: Optional[UserModel] = await UserMapper().get_data_by_id(data_id=user_id)
     if not user_model:
         raise BasicException(status_code=StatusCodeEnum.NOT_FOUND_ERROR.value, message="该用户不存在！")
     return UserOut(**user_model.to_dict())
