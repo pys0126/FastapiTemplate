@@ -5,6 +5,6 @@ class UserSexEnum(Enum):
     """
     用户性别枚举
     """
-    MALEtr = "男"
+    MALE = "男"
     FEMALE = "女"
     OTHER = "其他"

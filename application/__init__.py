@@ -1,3 +1,4 @@
+import logging
 import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,9 +11,18 @@ from application.exception.BasicException import BasicException
 from application.config.ServerConfig import ServerConfig, CORSConfig
 from application.controller import CommonController, UserController, router
 from application.dependency.TokenDependency import verify_token, get_current_user
+from application.util.TimeUtil import now_format_date
 
 # 创建日志目录（如果不存在）
 os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
+
+# 配置tortoise日志记录
+logging.basicConfig(level=logging.DEBUG,
+                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # 设置日志格式
+                    filename=f"{ServerConfig.log_dir}/{now_format_date()}.tortoise.log",  # 设置日志文件名
+                    filemode="w")
+logger: logging.Logger = logging.getLogger("tortoise")
+logger.setLevel(logging.DEBUG)
 
 # 创建FastAPI实例
 app: FastAPI = FastAPI(title=PROJECT_NAME, description=PROJECT_NAME)

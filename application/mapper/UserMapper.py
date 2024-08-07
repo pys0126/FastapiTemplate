@@ -10,28 +10,28 @@ class UserMapper(BaseMapper):
     orm_model: UserModel = UserModel
 
     @classmethod
-    async def get_data_by_email(self, email: str) -> Optional[UserModel]:
+    async def get_data_by_email(cls, email: str) -> Optional[UserModel]:
         """
         根据邮箱获取用户信息
         :param email: 邮箱
         :return: 用户模型
         """
-        return await self.orm_model.get_or_none(email=email)
+        return await cls.orm_model.get_or_none(email=email)
     
     @classmethod
-    async def get_data_by_username(self, username: str) -> Optional[UserModel]:
+    async def get_data_by_username(cls, username: str) -> Optional[UserModel]:
         """
         根据用户名获取用户信息
         :param username: 用户名
         :return: 用户模型
         """
-        return await self.orm_model.get_or_none(username=username)
+        return await cls.orm_model.get_or_none(username=username)
     
     @classmethod
-    async def get_data_by_phone(self, phone: int) -> Optional[UserModel]:
+    async def get_data_by_phone(cls, phone: int) -> Optional[UserModel]:
         """
         根据手机号获取用户信息
         :param phone: 手机号
         :return: 用户模型
         """
-        return await self.orm_model.get_or_none(phone=phone)
+        return await cls.orm_model.get_or_none(phone=phone)

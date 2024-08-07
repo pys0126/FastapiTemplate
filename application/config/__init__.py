@@ -12,5 +12,5 @@ with open(YAML_PATH, mode="r", encoding="u8") as file:
 PROJECT_NAME: str = YAML_CONTENT.get("ProjectName", "TestSystem")
 
 # Redis Key配置
-CAPTCHA_KEY: str = "fastapi_captcha_"  # 验证码Key
-TOKEN_KEY: str = "fastapi_token_"  # Token Key
+CAPTCHA_KEY: str = "fastapi:captcha:"  # 验证码Key
+TOKEN_KEY: str = "fastapi:token:"  # Token Key

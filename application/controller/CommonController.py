@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from starlette.responses import JSONResponse
+from fastapi.responses import JSONResponse
 from application.util.ResponseUtil import ResponseUtil
 from application.logic import CommonLogic
 
