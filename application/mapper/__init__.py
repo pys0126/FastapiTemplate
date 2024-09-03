@@ -1,7 +1,7 @@
 import traceback
-from typing import Optional, Type, Any
+from typing import Optional, Any
 from tortoise.functions import Sum
-from application.model import TortoiseBaseModel
+from tortoise.queryset import MODEL
 from application.util.LogUtil import write_error_log
 
 
@@ -9,7 +9,7 @@ class BaseMapper:
     """
     DAO层基类，提供基础的增删改查方法
     """
-    orm_model: Type[TortoiseBaseModel] = None
+    orm_model: Any = None
 
     @classmethod
     async def insert(cls, data: dict) -> bool:
@@ -23,7 +23,7 @@ class BaseMapper:
             if "id" in data.keys():
                 data.pop("id")
             # 插入数据
-            new_model: TortoiseBaseModel = await cls.orm_model.create(**data)
+            new_model: MODEL = await cls.orm_model.create(**data)
             await new_model.save()
             return True
         except Exception:
@@ -38,13 +38,13 @@ class BaseMapper:
         :return:
         """
         try:
-            new_model: TortoiseBaseModel = await cls.orm_model.filter(id=data.get("id")).first()
+            new_model: MODEL = await cls.orm_model.filter(id=data.get("id")).first()
             await new_model.update_from_dict(data=data)
         except Exception:
             write_error_log(log_message=f"此数据更新失败：{data}", traceback=traceback.format_exc())
 
     @classmethod
-    async def delete(cls, orm_model: TortoiseBaseModel) -> None:
+    async def delete(cls, orm_model: MODEL) -> None:
         """
         删除数据
         :param orm_model: ORM模型
@@ -57,7 +57,7 @@ class BaseMapper:
                             traceback=traceback.format_exc())
 
     @classmethod
-    async def get_data_by_id(cls, data_id: int) -> Optional[Type[TortoiseBaseModel]]:
+    async def get_data_by_id(cls, data_id: int) -> Optional[MODEL]:
         """
         根据数据ID获取数据
         :param data_id: 数据ID
@@ -66,7 +66,7 @@ class BaseMapper:
         return await cls.orm_model.filter(id=data_id).get_or_none()
     
     @classmethod
-    async def get_data_by_fields(cls, **kwargs) -> Optional[Type[TortoiseBaseModel]]:
+    async def get_data_by_fields(cls, **kwargs) -> Optional[MODEL]:
         """
         根据筛选条件获取数据
         :param kwargs: 筛选条件（and关系）
@@ -76,7 +76,7 @@ class BaseMapper:
 
     @classmethod
     async def get_data_list_by_fields(cls, page: int = None, page_size: int = None,
-                                      **kwargs) -> list[Type[TortoiseBaseModel]]:
+                                      **kwargs) -> list[MODEL]:
         """
         获取数据列表
         :param page: 第几页
