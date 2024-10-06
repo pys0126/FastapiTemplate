@@ -1,4 +1,4 @@
-# 基于FastApi的MVC模式开发模板
+# FastApi快速开发模板
 
 ## 简要说明
 
