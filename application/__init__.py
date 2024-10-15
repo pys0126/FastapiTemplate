@@ -1,17 +1,18 @@
 import logging
 import os
 from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
 from application.config import PROJECT_NAME
+from fastapi.middleware.cors import CORSMiddleware
+from application.util.TimeUtil import now_format_date
 from application.util.MysqlUtil import DATABASE_CONFIG
 from application.config.DatabaseConfig import MysqlConfig
 from tortoise.contrib.fastapi import register_tortoise
 from application.exception import low_exception_handler
 from application.exception.BasicException import BasicException
 from application.config.ServerConfig import ServerConfig, CORSConfig
+from application.middleware.ProcessMiddleware import ProcessMiddleware
 from application.controller import CommonController, UserController, router
 from application.dependency.TokenDependency import verify_token, get_current_user
-from application.util.TimeUtil import now_format_date
 
 # 创建日志目录（如果不存在）
 os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
@@ -32,6 +33,8 @@ register_tortoise(app=app, config=DATABASE_CONFIG, generate_schemas=MysqlConfig.
 # 配置CORS跨域中间件
 app.add_middleware(middleware_class=CORSMiddleware, allow_origins=CORSConfig.allow_origins, 
                    allow_methods=CORSConfig.allow_methods, allow_headers=CORSConfig.allow_headers)
+# 配置请求响应中间件
+app.add_middleware(middleware_class=ProcessMiddleware)
 
 # 配置路由、添加依赖
 app.include_router(router=router)  # 根路由
