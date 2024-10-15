@@ -19,13 +19,14 @@ def url_encode(text: str) -> str:
     return urllib.parse.quote(text)
 
 
-def random_uuid() -> str:
+def random_uuid(delimiter: bool = False) -> str:
     """
     生成随机uuid字符串
+    :param delimiter: 是否保留“-”分隔符
     :return: uuid字符串
     """
     result: str = str(uuid4())
-    return result.replace("-", "")
+    return result.replace("-", "") if not delimiter else result
 
 
 def base64_encode(text: str) -> str:
