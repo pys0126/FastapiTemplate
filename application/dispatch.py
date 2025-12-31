@@ -1,7 +1,7 @@
 """
 定时任务包
 """
-from application.model.SystemModel import SystemRequestLogModel
+from application.service.common.Model import SystemRequestLogModel
 from application.util.TokenUtil import get_user_id
 from starlette.datastructures import QueryParams
 from typing import Optional
