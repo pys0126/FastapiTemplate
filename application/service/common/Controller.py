@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from application.util.ResponseUtil import ResponseUtil
-from application.logic import CommonLogic
+from application.service.common import Logic
 
 # 创建路由
 router: APIRouter = APIRouter(prefix="/common", tags=["通用"])
@@ -14,5 +14,5 @@ def email_captcha(email: str) -> JSONResponse:
     :param email: 邮箱
     :return: JSONResponse
     """
-    CommonLogic.email_captcha(email=email)
+    Logic.email_captcha(email=email)
     return ResponseUtil().success()

@@ -2,7 +2,7 @@ from application.config import PROJECT_NAME, CAPTCHA_KEY
 from application.util.RedisUtil import RedisUtil
 from application.util.EmailUtil import send_email
 from application.config.EmailConfig import EmailConfig
-from application.enumeration.StatusCodeEnum import StatusCodeEnum
+from application.initial.BaseEnum import StatusCodeEnum
 from application.exception.BasicException import BasicException
 from application.util.StringUtil import generate_verification_code, is_valid_email
 

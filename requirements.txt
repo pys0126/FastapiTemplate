@@ -7,3 +7,7 @@ pymysql
 tortoise-orm[asyncmy]
 zmail
 httpx
+loguru
+werkzeug
+dbutils
+uvloop

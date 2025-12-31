@@ -1,6 +1,6 @@
 from pydantic import EmailStr, AnyHttpUrl, BaseModel, StrictInt, Field
 from application.enumeration.UserSexEnum import UserSexEnum
-from application.entity import BaseOutEntity
+from application.initial.BaseEntity import BaseOutEntity
 from typing import Optional
 
 

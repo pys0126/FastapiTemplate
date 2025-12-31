@@ -1,4 +1,4 @@
-from application.enumeration.StatusCodeEnum import StatusCodeEnum
+from application.initial.BaseEnum import StatusCodeEnum
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from typing import Optional, Any

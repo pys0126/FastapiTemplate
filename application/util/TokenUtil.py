@@ -5,16 +5,12 @@ import jwt
 from typing import Optional
 from application.config import TOKEN_KEY
 from application.util.TimeUtil import now_timestamp
-from application.util.RedisUtil import RedisUtil
+from application.util.RedisUtil import redis_util
 from application.config.ServerConfig import ServerConfig
 from application.util.StringUtil import base64_encode, random_uuid
 
-# redis客户端
-redis_client: RedisUtil = RedisUtil()
-key_prefix: str = TOKEN_KEY  # redis key前缀
 
-
-def generate_token(user_id: int) -> str:
+async def generate_token(user_id: int) -> str:
     """
     根据用ID生成token
     :param user_id: 用户id
@@ -29,11 +25,11 @@ def generate_token(user_id: int) -> str:
     # 生成Token
     token: str = jwt.encode(payload=payload, key=ServerConfig.secret_key, algorithm="HS256")
     # 缓存Token，用户id作为key，值为用户Token
-    redis_client.set_value(key=key_prefix + str(user_id), value=token, ex=ServerConfig.token_expire)
+    await redis_util.set_value(key=TOKEN_KEY + str(user_id), value=token, ex=ServerConfig.token_expire)
     return token
 
 
-def verify_token(token: str) -> bool:
+async def verify_token(token: str) -> bool:
     """
     根据token和用户id验证token是否正确
     :param token: token
@@ -43,7 +39,7 @@ def verify_token(token: str) -> bool:
         payload: dict = jwt.decode(jwt=token, key=ServerConfig.secret_key, algorithms=["HS256"])
         user_id: int = payload.get("user_id")
         # 从redis中获取token
-        redis_token: Optional[str] = redis_client.get_value(key=key_prefix + str(user_id))
+        redis_token: Optional[str] = await redis_util.get_value(key=TOKEN_KEY + str(user_id))
         if redis_token != token:
             return False
         return True
@@ -51,25 +47,25 @@ def verify_token(token: str) -> bool:
         return False
 
 
-def clear_token(user_id: int) -> bool:
+async def clear_token(user_id: int) -> bool:
     """
     清除token
     :param user_id: user_id
     :return: None
     """
     try:
-        user_id: str = key_prefix + str(user_id)
+        user_id: str = TOKEN_KEY + str(user_id)
         # 从redis中获取token
-        redis_token: Optional[str] = redis_client.get_value(key=user_id)
+        redis_token: Optional[str] = await redis_util.get_value(key=user_id)
         if redis_token is None:
             return False
-        redis_client.delete_by_key(key=user_id)  # 删除redis缓存的token
+        await redis_util.delete_by_key(key=user_id)  # 删除redis缓存的token
         return True
     except Exception:
         return False
 
 
-def get_user_id(token: str) -> int:
+async def get_user_id(token: str) -> int:
     """
     获取用户id
     :param token: token
@@ -79,7 +75,7 @@ def get_user_id(token: str) -> int:
         payload: dict = jwt.decode(jwt=token, key=ServerConfig.secret_key, algorithms=["HS256"])
         user_id: int = int(payload.get("user_id"))
         # 从redis中获取token
-        redis_token: Optional[str] = redis_client.get_value(key=key_prefix + str(user_id))
+        redis_token: Optional[str] = await redis_util.get_value(key=TOKEN_KEY + str(user_id))
         if redis_token != token:
             return 0
         return user_id

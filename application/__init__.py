@@ -1,46 +1,48 @@
-import logging
 import os
-from fastapi import FastAPI, Depends
+import logging
+import platform
+from fastapi import FastAPI
+from application.initial import lifespan
 from application.config import PROJECT_NAME
 from fastapi.middleware.cors import CORSMiddleware
 from application.util.TimeUtil import now_format_date
+from application.initial.BaseController import router
 from application.util.MysqlUtil import DATABASE_CONFIG
-from application.config.DatabaseConfig import MysqlConfig
 from tortoise.contrib.fastapi import register_tortoise
 from application.exception import low_exception_handler
-from application.exception.BasicException import BasicException
+from application.config.DatabaseConfig import MysqlConfig
 from application.config.ServerConfig import ServerConfig, CORSConfig
 from application.middleware.ProcessMiddleware import ProcessMiddleware
-from application.controller import CommonController, UserController, router
-from application.dependency.TokenDependency import verify_token, get_current_user
+from application.util import register_routers, register_exceptions, register_middleware
+
+# 加速事件循环
+if platform.system() == "Linux":
+    import uvloop
+    uvloop.install()
 
 # 创建日志目录（如果不存在）
 os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
 
-# 配置tortoise日志记录
-logging.basicConfig(level=logging.DEBUG,
-                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # 设置日志格式
-                    filename=f"{ServerConfig.log_dir}/{now_format_date()}.tortoise.log",  # 设置日志文件名
-                    filemode="w")
+# 配置Tortoise ORM日志等级
 logger: logging.Logger = logging.getLogger("tortoise")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
-# 创建FastAPI实例
-app: FastAPI = FastAPI(title=PROJECT_NAME, description=PROJECT_NAME)
+# 创建FastAPI实例，关闭接口文档；注册应用开始、结束事件
+app: FastAPI = FastAPI(title=PROJECT_NAME, description=PROJECT_NAME, docs_url=None, redoc_url=None, lifespan=lifespan)
 # 注册Tortoise ORM
 register_tortoise(app=app, config=DATABASE_CONFIG, generate_schemas=MysqlConfig.auto_create_table)
 
+# 自动配置自定义中间件
+register_middleware(app=app)
 # 配置CORS跨域中间件
-app.add_middleware(middleware_class=CORSMiddleware, allow_origins=CORSConfig.allow_origins, 
+app.add_middleware(middleware_class=CORSMiddleware, allow_origins=CORSConfig.allow_origins,
                    allow_methods=CORSConfig.allow_methods, allow_headers=CORSConfig.allow_headers)
-# 配置请求响应中间件
-app.add_middleware(middleware_class=ProcessMiddleware)
 
-# 配置路由、添加依赖
+# 自动配置自定义路由
+register_routers(app=app)
 app.include_router(router=router)  # 根路由
-app.include_router(router=CommonController.router)
-app.include_router(router=UserController.router)
 
-# 配置异常
-app.add_exception_handler(exc_class_or_status_code=BasicException, handler=BasicException.exception_handler)
+# 自动配置自定义异常
+register_exceptions(app=app)
+# 配置低级异常
 app.add_exception_handler(exc_class_or_status_code=Exception, handler=low_exception_handler)

@@ -1,6 +1,12 @@
 from application.config.ServerConfig import ServerConfig
-from application.util.TimeUtil import *
+from loguru import logger
 import os
+
+
+# 指定日志文件
+os.path.join(ServerConfig.log_dir, "{time}.logs.log")
+log_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} - {message}"
+logger.add(os.path.join(ServerConfig.log_dir, "{time}.logs.log"), rotation="10 MB", encoding="utf-8", retention="7 days")
 
 
 def write_error_log(log_message: str, traceback: str = "") -> None:
@@ -10,21 +16,5 @@ def write_error_log(log_message: str, traceback: str = "") -> None:
     :param traceback: 堆栈信息
     :return:
     """
-    log_dir: str = ServerConfig.log_dir
-    log_file: str = os.path.join(log_dir, f"{now_format_date()}.error.log")
-    log_message = f"{now_format_datetime()} - {log_message} - 异常堆栈信息 =>\n{traceback}"
-    with open(file=log_file, mode="a+", encoding="utf-8") as f:
-        f.write(log_message)
-
-
-def write_info_log(log_message: str) -> None:
-    """
-    写入信息日志
-    :param log_message: 日志信息
-    :return:
-    """
-    log_dir: str = ServerConfig.log_dir
-    log_file: str = os.path.join(log_dir, f"{now_format_date()}.info.log")
-    log_message = f"{now_format_datetime()} - 正常信息 => {log_message}\n"
-    with open(file=log_file, mode="a+", encoding="utf-8") as f:
-        f.write(log_message)
+    log_message = f"{log_message} - 异常堆栈信息 =>\n{traceback}"
+    logger.error(log_message)

@@ -1,29 +1,32 @@
 import uvicorn
-from application import app
+import asyncio
+import platform
 from argparse import ArgumentParser, Namespace
+from application.util import create_initial_user
 from application.config.ServerConfig import ServerConfig
 
 # 创建 ArgumentParser 对象
 parser: ArgumentParser = ArgumentParser(description="启动ASGI服务器")
 # 添加参数
 parser.add_argument("start_mode", type=str, choices=["pro", "dev", "debug"],
-                    help="启动模式: [pro：生产模式，dev：开发模式（自动重载），debug：调试模式（IDE可调试）]")
+                    help="启动模式: [pro：生产模式，dev：开发模式（自动重载）]")
 # 解析命令行参数
 args: Namespace = parser.parse_args()
 
 if __name__ == "__main__":
+    # 创建初始用户（如果没有）
+    asyncio.run(create_initial_user())
+    # 定义Web API参数
     params: dict = {
-        "app": app,
+        "app": "application:app",
         "host": ServerConfig.host,
-        "port": ServerConfig.port
+        "port": ServerConfig.port,
+        "loop": "uvloop" if platform.system() == "Linux" else "asyncio"
     }
+    # 开发模式加重载参数
     if args.start_mode == "dev":
-        params.update(app="application:app")
         params.update(reload=True)
     elif args.start_mode == "pro":
-        params.update(app="application:app")
         params.update(workers=ServerConfig.workers)
-    # 启动ASGI服务器
+    # 启动uvicorn服务器
     uvicorn.run(**params)
-
-

@@ -1,16 +1,17 @@
 """
 后端服务相关表ORM
 """
-from tortoise.fields import CharField, TextField, BigIntField
+from tortoise.fields import CharField, TextField, CASCADE, ForeignKeyField
 from application.util.StringUtil import random_uuid
-from application.model import TortoiseBaseModel
+from application.service.user.Model import UserModel
+from application.initial.BaseModel import TortoiseBaseModel
 
 
 class SystemRequestLogModel(TortoiseBaseModel):
     """
     请求日志表
     """
-    user_id: int = BigIntField(null=True, description="用户ID")
+    user: UserModel = ForeignKeyField(model_name="models.UserModel", on_delete=CASCADE, null=True, description="用户ID")
     request_body: str = TextField(null=True, description="请求体")
     request_headers: str = TextField(null=True, description="请求头")
     request_ip: str = CharField(max_length=32, null=True, description="请求IP")
