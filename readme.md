@@ -1,4 +1,4 @@
-# FastAPI 快速开发模板
+# 🚀🚀🚀 FastAPI 快速开发模板
 
 ## Quick Start
 
