@@ -27,6 +27,8 @@
 - 开发模式（自动重载）：`python main.py dev`。
 - 生产模式：`python main.py pro`。
 
+**Tips：** 初始超级用户`admin`，密码`admin`。
+
 ### 三、各模块说明
 
 - 在 `application/__init__.py` 初始化/注册各插件。

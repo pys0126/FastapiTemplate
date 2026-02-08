@@ -1,8 +1,6 @@
 import uvicorn
-import asyncio
 import platform
 from argparse import ArgumentParser, Namespace
-from application.util import create_initial_user
 from application.config.ServerConfig import ServerConfig
 
 # 创建 ArgumentParser 对象
@@ -14,8 +12,6 @@ parser.add_argument("start_mode", type=str, choices=["pro", "dev", "debug"],
 args: Namespace = parser.parse_args()
 
 if __name__ == "__main__":
-    # 创建初始用户（如果没有）
-    asyncio.run(create_initial_user())
     # 定义Web API参数
     params: dict = {
         "app": "application:app",

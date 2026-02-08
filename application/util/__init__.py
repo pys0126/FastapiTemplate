@@ -67,15 +67,11 @@ async def create_initial_user() -> None:
     :return:
     """
     from application.service.user.Util import encode_password
-    from application.util.MysqlUtil import DATABASE_CONFIG
     from application.service.user.Enum import UserSexEnum
     from application.service.user.Model import UserModel
-    from tortoise import Tortoise
-
-    await Tortoise.init(config=DATABASE_CONFIG)
     user_model: UserModel = UserModel(
-        username="superuser",
-        password=encode_password("abc123"),
+        username="admin",
+        password=encode_password("admin"),
         nickname="初始超级用户",
         email="admin@qq.com",
         phone=12345678911,

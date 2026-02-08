@@ -14,11 +14,13 @@ def scan_models() -> list:
     扫描ORM模型
     :return:
     """
-    model_dir: str = os.path.join(os.getcwd(), "application", "model")
+    app_dir: str = os.path.join(os.getcwd(), "application", "service")
     result: list = []
-    for file in os.listdir(model_dir):
-        if file.endswith(".py") and file != "__init__.py":
-            result.append(f"application.model.{file[:-3]}")
+    for app in os.listdir(app_dir):
+        if not app.endswith(".py"):
+            for file in os.listdir(os.path.join(app_dir, app)):
+                if file == "Model.py":
+                    result.append(f"application.service.{app}.Model")
     return result
 
 
