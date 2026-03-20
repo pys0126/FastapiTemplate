@@ -4,9 +4,7 @@ import os
 
 
 # 指定日志文件
-os.path.join(ServerConfig.log_dir, "{time}.logs.log")
-log_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} - {message}"
-logger.add(os.path.join(ServerConfig.log_dir, "{time}.logs.log"), rotation="10 MB", encoding="utf-8", retention="7 days")
+logger.add(os.path.join(ServerConfig.log_dir, "{time:YYYY-MM-DD}.log"), rotation="10 MB", encoding="utf-8", retention="7 days")
 
 
 def write_error_log(log_message: str, traceback: str = "") -> None:

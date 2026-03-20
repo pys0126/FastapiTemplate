@@ -4,7 +4,8 @@ pyyaml
 redis
 pyjwt
 pymysql
-tortoise-orm[asyncmy]
+tortoise-orm==0.25.1
+asyncmy
 zmail
 httpx
 loguru
