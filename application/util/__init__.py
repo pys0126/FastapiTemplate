@@ -18,13 +18,11 @@ def register_routers(app: FastAPI) -> None:
         # 跳过排除文件
         if module in exclude_file:
             continue
-        # 定义控制器名称
-        controller_name: str = module.capitalize() + "Controller"
         # 跳过非控制器模块
-        if not os.path.exists(f"application/service/{module}/{controller_name}.py"):
+        if not os.path.exists(f"application/service/{module}/Controller.py"):
             continue
         # 导入控制器
-        controller: object = import_module(name=f"application.service.{module}.{controller_name}")
+        controller: object = import_module(name=f"application.service.{module}.Controller")
         if hasattr(controller, "router"):
             app.include_router(router=controller.router)
 

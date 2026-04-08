@@ -27,10 +27,10 @@ async def verify_token(authorization: str = Header()) -> int:
     user_id: int = await TokenUtil.get_user_id(token=authorization)
     # 未注册
     if not await UserModel.filter(id=user_id).exists():
-        raise BasicException(status_code=StatusCodeEnum.AUTHORITY_ERROR.value, message="无权限访问！")
+        raise BasicException(status_code=StatusCodeEnum.AUTHORITY_ERROR, message="无权限访问！")
     # 登录失效
     if not await TokenUtil.verify_token(token=authorization) or user_id == 0:
-        raise BasicException(status_code=StatusCodeEnum.LOGIN_STATUS_EXPIRED.value, message="登陆状态失效！")
+        raise BasicException(status_code=StatusCodeEnum.LOGIN_STATUS_EXPIRED, message="登陆状态失效！")
     return user_id
 
 
@@ -44,4 +44,4 @@ async def get_current_user(user_id: int = Depends(verify_token)) -> UserModel:
         user_model: UserModel = await UserModel.get(id=user_id)
         return user_model
     except DoesNotExist:
-        raise BasicException(status_code=StatusCodeEnum.AUTHORITY_ERROR.value, message="无权限访问！")
+        raise BasicException(status_code=StatusCodeEnum.AUTHORITY_ERROR, message="无权限访问！")

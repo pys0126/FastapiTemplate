@@ -23,16 +23,3 @@ class SystemRequestLogModel(TortoiseBaseModel):
     class Meta:
         table: str = "system_request_log"
         table_description: str = "请求日志表"
-
-
-class SystemResponseLogModel(TortoiseBaseModel):
-    """
-    响应日志表
-    """
-    response_body: str = TextField(null=True, description="响应体")
-    response_headers: str = TextField(null=True, description="响应头")
-    request_id: str = CharField(max_length=36, default=random_uuid(), null=True, description="请求ID")
-
-    class Meta:
-        table: str = "system_response_log"
-        table_description: str = "响应日志表"

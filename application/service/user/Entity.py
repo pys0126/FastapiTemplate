@@ -1,5 +1,5 @@
 from pydantic import EmailStr, AnyHttpUrl, BaseModel, StrictInt, Field
-from application.enumeration.UserSexEnum import UserSexEnum
+from application.service.user.Enum import UserSexEnum
 from application.initial.BaseEntity import BaseOutEntity
 from typing import Optional
 
