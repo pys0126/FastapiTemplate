@@ -26,5 +26,5 @@ class UserModel(TortoiseBaseModel):
     is_disabled: bool = BooleanField(null=True, default=False, description="是否禁用")
 
     class Meta:
-        table: str = "users"  # 表名
+        table: str = "application_user"  # 表名
         table_description: str = "用户表"  # 表描述

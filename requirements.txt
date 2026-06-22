@@ -11,3 +11,4 @@ httpx
 loguru
 werkzeug
 dbutils
+orjson

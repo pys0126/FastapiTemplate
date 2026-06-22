@@ -10,10 +10,10 @@ class BasicException(HTTPException):
     自定义异常处理
     """
     def __init__(self, status_code: StatusCodeEnum = StatusCodeEnum.ERROR,
-                 message: str = "服务器繁忙，请稍后重试！",
+                 message: str = None,
                  detail: Any = None):
         self.status_code: StatusCodeEnum = status_code
-        self.message: str = message
+        self.message: str = message or status_code.description
         self.detail: Any = detail
 
     @staticmethod
@@ -24,4 +24,4 @@ class BasicException(HTTPException):
         :param exception: 异常类
         :return:
         """
-        return ResponseUtil(code=exception.status_code, message=exception.message).fail()
+        return ResponseUtil(status_code=exception.status_code, message=exception.message).fail()

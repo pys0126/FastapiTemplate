@@ -1,5 +1,5 @@
 from application.service.user.Entity import UserAdd, UserOut, UserLogin
-from application.dependency.TokenDependency import verify_token
+from application.dependency.AuthDependency import verify_token
 from application.util.ResponseUtil import ResponseUtil
 from fastapi.responses import JSONResponse
 from application.service.user import Logic

@@ -3,18 +3,16 @@
 """
 from application.service.common.Model import SystemRequestLogModel
 from application.util.TokenUtil import get_user_id
-from starlette.datastructures import QueryParams
-from typing import Optional
+from typing import Optional, Callable
 from asyncio import Task
 import asyncio
-import orjson
 
 
 # 存储后台任务集合
 background_tasks: set = set()
 
 
-def add_task(func: callable, *args, **kwargs) -> None:
+def add_task(func: Callable, *args, **kwargs) -> None:
     """
     添加任务
     :param func: 执行的函数
@@ -32,8 +30,8 @@ def add_task(func: callable, *args, **kwargs) -> None:
     task.add_done_callback(background_tasks.discard)
 
 
-async def write_request_log(token: str, request_body: str, request_ip: str, method: str, url_path: str,
-                            query_params: QueryParams, request_id: str) -> None:
+async def write_request_log(token: str, request_body: Optional[str], request_ip: str, method: str, url_path: str,
+                            query_params: Optional[str], request_id: str) -> None:
     """
     写入请求日志到数据库
     :param token: 用户Token
@@ -54,6 +52,6 @@ async def write_request_log(token: str, request_body: str, request_ip: str, meth
         request_ip=request_ip,
         request_method=method,
         request_path=url_path,
-        request_query=orjson.dumps(dict(query_params)).decode("utf-8"),
+        request_query=query_params,
         request_id=request_id
     )

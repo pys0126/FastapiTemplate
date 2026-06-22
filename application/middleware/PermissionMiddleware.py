@@ -25,6 +25,6 @@ class PermissionMiddleware(BaseHTTPMiddleware):
         if user_model is not None:
             # 验证是否禁用
             if user_model.is_disabled:
-                return ResponseUtil(code=StatusCodeEnum.AUTHORITY_ERROR.value, message="该用户已被封禁！").fail()
+                return ResponseUtil(status_code=StatusCodeEnum.USER_DISABLED).fail()
         # 继续执行请求
         return await call_next(request)

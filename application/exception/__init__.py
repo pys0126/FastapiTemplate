@@ -16,4 +16,4 @@ async def low_exception_handler(request: Request, exception: Exception):
     traceback_info: str = format_exc()
     write_error_log(log_message=f"请求方法：{request.method} - 请求地址：{request.url} - 系统异常：{exception}",
                     traceback=traceback_info)
-    return ResponseUtil(code=StatusCodeEnum.ERROR.value, message="系统异常，请稍后再试！").fail()
+    return ResponseUtil(status_code=StatusCodeEnum.SYSTEM_ERROR).fail()

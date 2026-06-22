@@ -19,10 +19,10 @@ def email_captcha(email: str) -> None:
     # Redis的Key
     redis_key: str = CAPTCHA_KEY + email
     if redis_client.get_value(key=redis_key) is not None:
-        raise BasicException(status_code=StatusCodeEnum.ILLEGALITY_ERROR.value, message="已发送验证码，未找到请查看垃圾箱！")
+        raise BasicException(status_code=StatusCodeEnum.EMAIL_CAPTCHA_ALREADY_SENT)
     # 检查邮箱格式
     if not is_valid_email(text=email):
-        raise BasicException(status_code=StatusCodeEnum.BAD_REQUEST_ERROR.value, message="请输入正确邮箱")
+        raise BasicException(status_code=StatusCodeEnum.EMAIL_FORMAT_ERROR)
     code: str = generate_verification_code()  # 生成验证码
     # 发送邮件
     result: bool = send_email(target_email=email, title=f"[{PROJECT_NAME}] 邮箱验证码",
@@ -30,6 +30,6 @@ def email_captcha(email: str) -> None:
                                       f"{int(EmailConfig.email_code_expire // 60)}分钟内有效")
     # 发送失败
     if not result:
-        raise BasicException(status_code=StatusCodeEnum.ERROR.value, message="验证码发送失败，请稍后再试")
+        raise BasicException(status_code=StatusCodeEnum.CAPTCHA_SEND_ERROR)
     # 保存验证码到redis
     redis_client.set_value(key=redis_key, value=code, ex=EmailConfig.email_code_expire)
