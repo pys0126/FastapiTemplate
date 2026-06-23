@@ -2,8 +2,8 @@ import random
 import string
 from typing import Optional
 from application.config import CAPTCHA_KEY
+from application.util.RedisUtil import redis_util
 from application.service.user.Model import UserModel
-from application.service.common.Logic import redis_client
 from application.util.StringUtil import sha1_encode, md5_encode
 
 
@@ -14,9 +14,11 @@ async def verify_captcha(key: str, captcha: str) -> bool:
     :param captcha: 验证码
     :return:
     """
-    result: Optional[str] = await redis_client.get_value(key=CAPTCHA_KEY + key)
+    result: Optional[str] = await redis_util.get_value(key=CAPTCHA_KEY + key)
     if result is None or captcha != result:
         return False
+    # 删除验证码
+    await redis_util.delete_by_key(key=CAPTCHA_KEY + key)
     return True
 
 

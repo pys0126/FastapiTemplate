@@ -20,6 +20,7 @@ class StatusCodeEnum(Enum):
     EMAIL_FORMAT_ERROR = (4003, "邮箱格式错误")
     PASSWORD_FORMAT_ERROR = (4004, "密码最少6位，包含字母与数字，且不能包含特殊字符")
     EMAIL_CAPTCHA_ALREADY_SENT = (4005, "已发送验证码，未找到请查看垃圾箱")
+    PHONE_CAPTCHA_ALREADY_SENT = (4006, "已发送验证码，未收到请重试")
 
     # 权限相关
     AUTHORITY_ERROR = (4030, "无权限访问")

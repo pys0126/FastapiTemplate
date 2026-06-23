@@ -9,6 +9,7 @@ ServerConfig:
   file_max_size: 3145728  # 文件最大上传大小（字节）
   token_expire: 604800  # Token有效期（秒），用户登录有效期
   secret_key: "93b0da7c01a615a5ec93d1ce0048e440"  # Token密钥
+  captcha_expire: 300  # 验证码有效期（秒）
 
   # 跨域配置
   CORSConfig:
@@ -20,7 +21,6 @@ ServerConfig:
 EmailConfig:
   email_from: 'xxx@163.com'  # 发件邮箱
   email_password: 'XXX'  # 邮箱密码/SMTP授权码
-  email_code_expire: 300  # 邮箱验证码有效期（秒）
 
 # 数据库配置
 DatabaseConfig:

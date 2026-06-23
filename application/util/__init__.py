@@ -19,7 +19,7 @@ def register_routers(app: FastAPI) -> None:
         if module in exclude_file:
             continue
         # 定义控制器名称
-        controller_name: str = module.capitalize() + "Controller"
+        controller_name: str = "Controller"
         # 跳过非控制器模块
         if not os.path.exists(f"application/service/{module}/{controller_name}.py"):
             continue

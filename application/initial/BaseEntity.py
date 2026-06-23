@@ -29,7 +29,7 @@ class PagingEntity(BaseModel):
     """
     page: StrictInt
     page_size: StrictInt
-    total_count: StrictInt
+    total: StrictInt
     items: list
 
 

@@ -70,9 +70,9 @@ class TortoiseBaseModel(Model):
         if not return_model:
             return PagingEntity(page=page,
                                 page_size=page_size,
-                                total_count=await cls.filter(**kwargs).count(),
+                                total=await cls.filter(**kwargs).count(),
                                 items=[item.to_dict() for item in model_list])
         return PagingEntity(page=page,
                             page_size=page_size,
-                            total_count=await cls.filter(**kwargs).count(),
+                            total=await cls.filter(**kwargs).count(),
                             items=model_list)

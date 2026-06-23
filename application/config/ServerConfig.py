@@ -18,6 +18,8 @@ class ServerConfig:
     # Token过期时间，默认7天
     token_expire: int = int(SERVER_CONFIG.get("token_expire", int(timedelta(days=7).total_seconds())))
     secret_key: str = SERVER_CONFIG.get("secret_key", os.urandom(16).hex())  # Token加密密钥
+    # 验证码过期时间（秒），默认5分钟
+    captcha_expire: int = int(SERVER_CONFIG.get("captcha_expire", 300))
 
     file_max_size: int = int(SERVER_CONFIG.get("file_max_size", 1024 * 1024 * 3))  # 文件最大上传大小（字节），默认3M
 

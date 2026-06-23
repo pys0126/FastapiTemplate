@@ -1,7 +1,7 @@
 """
 后台任务模块
 """
-from application.service.common.Model import SystemRequestLogModel
+from application.service.system.Model import SystemRequestLogModel
 from application.util.TokenUtil import get_user_id
 from application.util.LogUtil import write_task_log
 from typing import Optional, Callable

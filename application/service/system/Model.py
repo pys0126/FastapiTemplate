@@ -11,7 +11,7 @@ class SystemRequestLogModel(TortoiseBaseModel):
     """
     请求日志表
     """
-    user: UserModel = ForeignKeyField(model_name="models.UserModel", on_delete=CASCADE, null=True, description="用户ID")
+    user: UserModel = ForeignKeyField(to="models.UserModel", on_delete=CASCADE, null=True, description="用户ID")
     request_body: str = TextField(null=True, description="请求体")
     request_headers: str = TextField(null=True, description="请求头")
     request_ip: str = CharField(max_length=32, null=True, description="请求IP")
