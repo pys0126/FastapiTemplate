@@ -2,10 +2,27 @@ import os
 from typing import Type
 from fastapi import FastAPI
 from importlib import import_module
-from datetime import datetime, timedelta
 
 # 排除文件
 exclude_file: list = ["__init__.py", "__pycache__"]
+
+
+def register_admin() -> None:
+    """
+    自动注册各后台管理
+    :return:
+    """
+    for module in os.listdir(path="application/service"):
+        # 跳过排除文件
+        if module in exclude_file:
+            continue
+        # 定义后台管理名称
+        admin_name: str = "Admin"
+        # 跳过非后台管理模块
+        if not os.path.exists(f"application/service/{module}/{admin_name}.py"):
+            continue
+        # 导入后台管理
+        import_module(name=f"application.service.{module}.{admin_name}")
 
 
 def register_routers(app: FastAPI) -> None:
@@ -73,13 +90,12 @@ async def create_initial_user() -> None:
         username="admin",
         password=encode_password("admin"),
         nickname="初始超级用户",
-        email="admin@qq.com",
-        phone=12345678911,
+        email="admin@admin.com",
+        phone="12345678911",
         sex=UserSexEnum.MALE,
         is_disabled=False,
-        is_premium=True,
-        premium_expire=datetime.now() + timedelta(days=365),
-        premium_level=1,
+        is_employee=True,
+        is_superuser=True,
         address="中国"
     )
     if await UserModel.all().count() == 0:

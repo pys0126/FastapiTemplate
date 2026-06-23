@@ -4,6 +4,7 @@ import platform
 from fastapi import FastAPI
 from application.initial import lifespan
 from application.config import PROJECT_NAME
+from fastadmin import fastapi_app as admin_app
 from fastapi.middleware.cors import CORSMiddleware
 from application.util.TimeUtil import now_format_date
 from application.initial.BaseController import router
@@ -13,7 +14,7 @@ from application.exception import low_exception_handler
 from application.config.DatabaseConfig import MysqlConfig
 from application.config.ServerConfig import ServerConfig, CORSConfig
 from application.middleware.ProcessMiddleware import ProcessMiddleware
-from application.util import register_routers, register_exceptions, register_middleware
+from application.util import register_routers, register_exceptions, register_middleware, register_admin
 
 # 加速事件循环
 if platform.system() == "Linux":
@@ -46,3 +47,11 @@ app.include_router(router=router)  # 根路由
 register_exceptions(app=app)
 # 配置低级异常
 app.add_exception_handler(exc_class_or_status_code=Exception, handler=low_exception_handler)
+
+# 配置后台管理
+os.environ["ADMIN_USER_MODEL"] = "UserModel"
+os.environ["ADMIN_USER_MODEL_USERNAME_FIELD"] = "username"
+os.environ["ADMIN_SECRET_KEY"] = ServerConfig.secret_key
+os.environ["ADMIN_SITE_NAME"] = PROJECT_NAME + "管理后台"
+register_admin()  # 注册各模块后台管理
+app.mount("/admin", admin_app)
