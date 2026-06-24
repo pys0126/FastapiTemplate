@@ -1,10 +1,10 @@
 import inspect
 from copy import copy
-from contextlib import contextmanager
-from typing import Any, Iterator, Optional, Sequence
 from decimal import Decimal
+from contextlib import contextmanager
 from asgiref.sync import sync_to_async
-from fastadmin import TortoiseModelAdmin
+from fastadmin import TortoiseModelAdmin, action
+from typing import Any, Iterator, Optional, Sequence
 from fastadmin.models.schemas import ModelFieldWidgetSchema, WidgetType
 
 
@@ -12,6 +12,17 @@ class BaseAdmin(TortoiseModelAdmin):
     """
     基础后台管理类
     """
+    actions_on_top = True
+    actions_on_bottom = False
+
+    @action(description="批量删除")
+    async def batch_delete(self, obj_ids: list[int]) -> None:
+        """
+        批量删除
+        :param obj_ids: 需要删除的ID列表
+        :return:
+        """
+        await self.model_cls.filter(id__in=obj_ids).delete()
 
     @property
     def field_label_map(self) -> dict[str, str]:
@@ -114,6 +125,9 @@ class BaseAdmin(TortoiseModelAdmin):
         生成后台配置前，把字段配置切换成展示名，使fastadmin前端按description展示。
         :return:
         """
+        # 顺带增加批量删除操作
+        self.actions += ("batch_delete",)
+        # 顺带更新当前管理模块名称
         table_description: Optional[str] = getattr(self.model_cls._meta, "table_description", None)
         if table_description:
             model_name: str = table_description.replace("表", "")
@@ -227,7 +241,19 @@ class BaseAdmin(TortoiseModelAdmin):
         :return:
         """
         payload = payload or {}
-        display_payload: dict = {self.get_column_name(column=field): value for field, value in payload.items()}
+        real_payload: dict = {self.get_field_name(label=field): value for field, value in payload.items()}
+        if id is not None:
+            readonly_fields: set[str] = set(self.get_field_sequence(labels=self.readonly_fields))
+            readonly_fields.add(self.get_model_pk_name(self.model_cls))
+            real_payload = {
+                field: value
+                for field, value in real_payload.items()
+                if field not in readonly_fields
+            }
+        display_payload: dict = {
+            self.get_column_name(column=field): value
+            for field, value in real_payload.items()
+        }
         return await super().save_model(id, display_payload)
 
     async def serialize_obj_attributes(
@@ -290,5 +316,9 @@ class BaseAdmin(TortoiseModelAdmin):
                 display_field_function_fn = sync_to_async(display_field_function)
 
             obj_dict[field_name] = await display_field_function_fn(obj)
+
+        pk_name: str = self.get_model_pk_name(self.model_cls)
+        if pk_name not in obj_dict:
+            obj_dict[pk_name] = getattr(obj, pk_name)
 
         return obj_dict

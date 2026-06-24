@@ -17,7 +17,7 @@ class UserModel(TortoiseBaseModel):
                             description="头像URL")
     age: int = IntField(default=18, max_length=3, null=False, description="年龄")
     sex: str = CharEnumField(enum_type=UserSexEnum, max_length=3, null=False, default=UserSexEnum.OTHER.value,
-                             description="性别枚举，男/女/其他")
+                             description="性别枚举")
     intro: str = CharField(default="简短介绍一下自己吧~", max_length=250, null=False, description="个人简介")
     occupation: str = CharField(default="未知", max_length=20, null=False, description="职业")
     address: str = CharField(default="未知", max_length=50, null=False, description="地址")
@@ -31,3 +31,6 @@ class UserModel(TortoiseBaseModel):
         table: str = "application_user"  # 表名
         table_description: str = "用户表"  # 表描述
         indexes: tuple = ("username", "nickname", "email", "phone", "sex", "is_disabled", "is_employee", "is_superuser")
+
+    def __str__(self):
+        return self.username

@@ -29,8 +29,8 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         :param call_next: 请求处理器
         :return: 响应对象
         """
-        # 预处理OPTIONS请求不记录
-        if request.method in SKIP_LOG_METHODS:
+        # 预处理OPTIONS请求、admin路径不记录
+        if request.method in SKIP_LOG_METHODS or request.url.path.startswith("/admin"):
             return await call_next(request)
         # 生成请求ID
         request_id: str = random_uuid(delimiter=True)

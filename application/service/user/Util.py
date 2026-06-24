@@ -32,10 +32,10 @@ def encode_password(password: str) -> str:
     return sha1_encode(md5_encode(password))
 
 
-async def generate_username(length: int = 10) -> str:
+async def generate_username(length: int = 6) -> str:
     """
     生成随机用户名
-    :param length:
+    :param length: 长度
     :return:
     """
     characters = string.ascii_letters + string.digits

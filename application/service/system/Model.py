@@ -23,6 +23,10 @@ class SystemRequestLogModel(TortoiseBaseModel):
     class Meta:
         table: str = "system_request_log"
         table_description: str = "请求日志表"
+        indexes: tuple = ("request_id", "request_path", "request_method", "request_ip")
+
+    def __str__(self):
+        return self.request_id
 
 
 class SystemResponseLogModel(TortoiseBaseModel):
@@ -36,3 +40,4 @@ class SystemResponseLogModel(TortoiseBaseModel):
     class Meta:
         table: str = "system_response_log"
         table_description: str = "响应日志表"
+        indexes: tuple = ("request_id",)
