@@ -50,6 +50,7 @@
 | 邮件 | zmail |
 | 序列化 | orjson |
 | WebSocket | Starlette WebSocket |
+| 接口测试 | FastAPI TestClient / httpx2 |
 
 完整依赖见 [requirements.txt](./requirements.txt)。
 
@@ -150,6 +151,36 @@ http://127.0.0.1:7878/admin
 
 首次启动且用户表为空时，系统会自动创建初始管理员用户。
 
+## 接口测试
+
+项目内置接口测试模块，测试文件位于：
+
+```text
+application/tests/
+```
+
+当前示例：
+
+```text
+application/tests/UserTest.py
+```
+
+测试模块通过 `application.tests.with_test` 装饰器创建 `TestClient`，并在执行测试接口前自动登录，将登录返回的 Token 写入 `Authorization` 请求头，便于测试需要用户态的接口。
+
+命令行运行示例：
+
+```bash
+python application/tests/UserTest.py
+```
+
+在 PyCharm、VS Code 等 IDE 中直接运行测试文件时，需要将运行配置的工作目录设置为项目根目录：
+
+```text
+fastapi-template/
+```
+
+也就是包含 `main.py`、`config.yaml`、`application/` 的目录。项目配置读取和包导入都依赖项目根目录作为工作目录；如果工作目录设置为 `application/tests/`，可能会出现找不到配置文件或模块导入失败的问题。
+
 ## 生产启动脚本
 
 项目提供 [service.sh](./service.sh) 用于生产环境进程管理：
@@ -205,6 +236,9 @@ fastapi-template/
 │   │   ├── common/                 # 通用服务，如验证码
 │   │   ├── system/                 # 系统模块，如请求日志/响应日志后台管理
 │   │   └── user/                   # 用户模块，含用户接口、模型、后台管理
+│   ├── tests/                      # 接口测试模块
+│   │   ├── __init__.py             # 测试装饰器和 TestClient 初始化
+│   │   └── UserTest.py             # 用户接口测试示例
 │   ├── util/                       # 工具包
 │   │   ├── CommonUtil.py
 │   │   ├── EmailUtil.py
@@ -427,6 +461,12 @@ python main.py pro
 ./service.sh status
 ```
 
+运行接口测试：
+
+```bash
+python application/tests/UserTest.py
+```
+
 停止后台进程：
 
 ```bash
@@ -441,6 +481,7 @@ python main.py pro
 - 配置项统一放入 `config.yaml`，不要在业务代码中硬编码。
 - 业务错误优先使用 `BasicException` 和 `StatusCodeEnum`。
 - 涉及用户态的接口优先复用 `AuthDependency.py` 中的依赖。
+- 新增接口测试建议放在 `application/tests/` 下，IDE 运行时将工作目录设置为项目根目录。
 - 生产环境建议关闭 `auto_create_table`，使用迁移工具或 SQL 管理表结构。
 
 ## 注意事项
