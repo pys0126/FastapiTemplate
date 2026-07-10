@@ -50,9 +50,9 @@ class TortoiseBaseModel(Model):
         return int(result.sum) if result.sum else 0
 
     @classmethod
-    async def get_data_list_by_fields(cls, page: int = None, page_size: int = None, return_model: bool = False,
+    async def get_data_list_by_fields(cls, page: int, page_size: int, return_model: bool = False,
                                       order_field: str = "-id",
-                                      **kwargs) -> Union[PagingEntity, list]:
+                                      **kwargs) -> PagingEntity:
         """
         获取数据列表（不传分页返回所有ORM模型）
         :param page: 第几页
@@ -62,9 +62,6 @@ class TortoiseBaseModel(Model):
         :param kwargs: 筛选条件
         :return: 分页对象 | 所有ORM对象列表
         """
-        # 如果没有分页，则直接返回所有数据
-        if not all([page, page_size]):
-            return await cls.filter(**kwargs).order_by(order_field)
         model_list: list = await cls.filter(**kwargs).order_by(order_field).limit(page_size).offset(
             (page - 1) * page_size)
         if not return_model:

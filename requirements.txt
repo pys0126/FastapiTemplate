@@ -7,7 +7,7 @@ pymysql
 tortoise-orm==1.1.7
 asyncmy
 zmail
-httpx
+httpx2
 loguru
 werkzeug
 dbutils

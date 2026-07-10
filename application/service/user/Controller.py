@@ -23,8 +23,7 @@ async def register(user_add: UserAdd) -> JSONResponse:
 
 @router.post("/login", summary="登录用户")
 async def login(user_login: UserLogin) -> JSONResponse:
-    token: str = await Logic.login(user_login=user_login)
-    return ResponseUtil(data=token).success()
+    return ResponseUtil(data=await Logic.login(user_login=user_login)).success()
 
 
 @router.get("/info/{user_id:int}", summary="根据ID获取用户信息", dependencies=[Depends(verify_token)])

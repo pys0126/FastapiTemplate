@@ -88,7 +88,7 @@ async def create_initial_user() -> None:
     from application.service.user.Model import UserModel
     user_model: UserModel = UserModel(
         username="admin",
-        password=encode_password("admin"),
+        password=encode_password("admin123"),
         nickname="初始超级用户",
         email="admin@admin.com",
         phone="12345678911",

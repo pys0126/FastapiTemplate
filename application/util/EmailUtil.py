@@ -1,6 +1,6 @@
 from application.config.EmailConfig import EmailConfig
 from zmail.server import MailServer
-from httpx import Response, request
+from httpx2 import Response, request
 import zmail
 
 
