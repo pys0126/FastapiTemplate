@@ -186,7 +186,11 @@ class BaseAdmin(TortoiseModelAdmin):
             fields_for_serialize -= set(self.exclude)
         if self.list_display:
             fields_for_serialize |= set(self.list_display)
-        return fields_for_serialize
+        real_fields_for_serialize = {
+            self.get_field_name(label=field)
+            for field in fields_for_serialize
+        }
+        return fields_for_serialize | real_fields_for_serialize
 
     def resolve_sort_by(self, sort_by: str) -> str:
         """
@@ -233,7 +237,7 @@ class BaseAdmin(TortoiseModelAdmin):
                 filters=real_filters,
             )
 
-    async def save_model(self, id: Any = None, payload: dict = None) -> Optional[dict]:
+    async def save_model(self, id: Optional[int] = None, payload: Optional[dict] = None) -> Optional[dict]:
         """
         保存时统一使用展示名字段，兼容前端传展示名和手动传真实字段名两种场景。
         :param id: 对象ID

@@ -20,7 +20,7 @@ class SystemRequestLogAdmin(BaseAdmin):
     list_display = ["id", "request_id", "用户", "request_ip", "request_path", "request_method", "request_body",
                     "request_method", "request_path", "request_headers", "request_query"]
     list_filter = ["request_method", "request_path"]
-    search_fields = ["request_ip", "request_path"]
+    search_fields = ["request_ip", "request_path", "user__username", "user__nickname"]
     ordering = ["-id"]
     readonly_fields = list_display
     widget_actions = ["request_chart"]
@@ -39,7 +39,7 @@ class SystemRequestLogAdmin(BaseAdmin):
     async def request_chart(self, payload: WidgetActionInputSchema) -> WidgetActionResponseSchema:
         date_list: list[str] = get_date_list(days=7)  # 获取最近7天的日期列表（包含今天）
         # 查询指定时间段的数据
-        query_list: list[datetime] = await SystemRequestLogModel.filter(
+        query_list = await SystemRequestLogModel.filter(
             create_datetime__gte=date_list[0] + " 00:00:00",
             create_datetime__lte=date_list[-1] + " 23:59:59"
         ).values_list("create_datetime", flat=True)
