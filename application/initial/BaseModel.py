@@ -1,8 +1,8 @@
 """
 数据表模型基类
 """
-from typing import Any, Union
 from datetime import datetime
+from typing import Any, Optional
 from tortoise.models import Model
 from tortoise.functions import Sum
 from tortoise.fields import DatetimeField, BigIntField
@@ -22,20 +22,19 @@ class TortoiseBaseModel(Model):
     class Meta:
         abstract = True  # 抽象类，不会创建表
 
-    def to_dict(self) -> dict:
+    def to_dict(self, exclude: Optional[tuple[str]] = None) -> dict:
         """
         转为字典
+        :param exclude: 需要排除的字段
         :return:
         """
         result: dict = {}
         # 提取当前模型的字段的值
         for key in self.__dict__.keys():
-            if key in self._meta.fields:
-                # 尝试转为可读的时间字符串
-                value: Any = self.__dict__.get(key)
-                if isinstance(value, datetime):
-                    value: str = value.strftime("%Y-%m-%d %H:%M:%S")
-                result.update({key: value})
+            # 排除指定字段
+            if exclude and key in exclude:
+                continue
+            result.update({key: self.__dict__.get(key)})
         return result
 
     @classmethod
