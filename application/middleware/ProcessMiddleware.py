@@ -30,7 +30,7 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         :return: 响应对象
         """
         # 预处理OPTIONS请求、admin路径不记录
-        if request.method in SKIP_LOG_METHODS or request.url.path.startswith("/admin"):
+        if request.method in SKIP_LOG_METHODS or "admin" in request.url.path:
             return await call_next(request)
         # 生成请求ID
         request_id: str = random_uuid(delimiter=True)
