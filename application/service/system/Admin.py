@@ -24,6 +24,7 @@ class SystemRequestLogAdmin(BaseAdmin):
     ordering = ["-id"]
     readonly_fields = list_display
     widget_actions = ["request_chart"]
+    actions = ["batch_delete"]
 
     @widget_action(
         widget_action_type=WidgetActionType.ChartLine,
@@ -73,6 +74,7 @@ class SystemResponseLogAdmin(BaseAdmin):
     search_fields = ["request_id"]
     ordering = ["-id"]
     readonly_fields = list_display
+    actions = ["batch_delete"]
 
     async def has_add_permission(self, user_id: UUID | int | None = None) -> bool:
         return False

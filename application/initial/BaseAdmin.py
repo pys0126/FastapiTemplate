@@ -125,8 +125,6 @@ class BaseAdmin(TortoiseModelAdmin):
         生成后台配置前，把字段配置切换成展示名，使fastadmin前端按description展示。
         :return:
         """
-        # 顺带增加批量删除操作
-        self.actions += ("batch_delete",)
         # 顺带更新当前管理模块名称
         table_description: Optional[str] = getattr(self.model_cls._meta, "table_description", None)
         if table_description:
