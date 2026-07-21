@@ -1,10 +1,11 @@
 """
 数据表模型基类
 """
+from itertools import groupby
 from datetime import datetime
-from typing import Any, Optional
 from tortoise.models import Model
 from tortoise.functions import Sum
+from typing import Any, Optional, Self
 from tortoise.fields import DatetimeField, BigIntField
 from application.initial.BaseEntity import PagingEntity
 
@@ -72,3 +73,31 @@ class TortoiseBaseModel(Model):
                             page_size=page_size,
                             total=await cls.filter(**kwargs).count(),
                             items=model_list)
+
+    @classmethod
+    async def group_by(cls, group_field: str, **kwargs) -> dict[Any, Self]:
+        """
+        根据字段分组（单个数据）
+        :param group_field: 分组字段
+        :param kwargs: 筛选条件
+        :return: 分组结果（字典+ORM模型）
+        """
+        return {getattr(item, group_field): item async for item in cls.filter(**kwargs)}
+
+    @classmethod
+    async def batch_group_by(cls, group_field: str, result_fields: Optional[tuple] = None, **kwargs) -> dict[Any, list]:
+        """
+        根据字段分组（多个数据）
+        :param group_field: 分组字段
+        :param result_fields: 结果字段
+        :param kwargs: 筛选条件
+        :return: 分组结果（字典+列表数据）
+        """
+        if result_fields:
+            queryset = await cls.filter(**kwargs).values(*result_fields)
+            group_data = groupby(queryset, key=lambda x: x[group_field])
+            return {key: list(group) for key, group in group_data}
+        else:
+            queryset = await cls.filter(**kwargs).all()
+            group_data = groupby(queryset, key=lambda x: getattr(x, group_field))
+            return {key: list([item.to_dict() for item in group]) for key, group in group_data}
