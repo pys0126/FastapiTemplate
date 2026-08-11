@@ -12,6 +12,7 @@ class BaseAdmin(TortoiseModelAdmin):
     """
     基础后台管理类
     """
+    ordering = ["-id"]
     actions_on_top = True
     actions_on_bottom = False
 
