@@ -12,4 +12,4 @@ loguru
 werkzeug
 dbutils
 orjson
-fastadmin==0.4.9
+fastadmin

@@ -53,5 +53,6 @@ os.environ["ADMIN_USER_MODEL"] = "UserModel"
 os.environ["ADMIN_USER_MODEL_USERNAME_FIELD"] = "username"
 os.environ["ADMIN_SECRET_KEY"] = ServerConfig.secret_key
 os.environ["ADMIN_SITE_NAME"] = PROJECT_NAME + "管理后台"
+os.environ["ADMIN_LANGUAGE"] = "zh"
 register_admin()  # 注册各模块后台管理
 app.mount("/admin", admin_app)
