@@ -29,10 +29,11 @@
 - **认证鉴权**：基于 JWT、Redis、依赖注入实现登录态校验和当前用户获取。
 - **统一响应和状态码**：通过 `ResponseUtil` 和 `StatusCodeEnum` 规范接口返回结构。
 - **统一异常处理**：自定义 `BasicException` 和全局异常处理器，集中处理业务异常和系统异常。
-- **请求日志**：中间件采集请求信息并异步写入系统日志表，后台可查看请求记录和统计图表。
+- **请求日志**：中间件将请求信息写入 ARQ 队列，由独立 worker 异步写入系统日志表。
 - **异步 ORM**：使用 `tortoise-orm` 连接 MySQL，支持模型化开发和可选自动建表。
 - **Redis 工具封装**：封装缓存、验证码、Token、WebSocket 消息等常见操作。
-- **生产脚本**：内置 `service.sh`，支持启动、停止、重启、强杀和查看状态。
+- **后台任务**：基于 ARQ 和 Redis，将耗时或可重试任务与 Web 进程隔离。
+- **生产脚本**：内置 `service.sh` 和 `worker.sh`，分别管理 Web 与 ARQ worker。
 
 ## 技术栈
 
@@ -43,6 +44,7 @@
 | ORM | tortoise-orm |
 | 数据库 | MySQL + asyncmy |
 | 缓存 | Redis |
+| 后台任务 | ARQ |
 | 认证 | pyjwt |
 | 后台管理 | fastadmin |
 | 配置 | pyyaml |
@@ -98,6 +100,16 @@ ServerConfig:
   secret_key: "your-secret-key"
   captcha_expire: 300
 
+WorkerConfig:
+  queue_name: 'arq:queue:fastapi-template'
+  max_jobs: 5
+  job_timeout: 10
+  max_tries: 3
+  retry_delay: 2
+  job_expires: 60
+  enqueue_timeout: 0.5
+  shutdown_timeout: 10
+
 DatabaseConfig:
   MysqlConfig:
     host: '127.0.0.1'
@@ -127,6 +139,7 @@ python main.py dev
 生产模式：
 
 ```bash
+python main.py worker
 python main.py pro
 ```
 
@@ -183,7 +196,15 @@ fastapi-template/
 
 ## 生产启动脚本
 
-项目提供 [service.sh](./service.sh) 用于生产环境进程管理：
+项目提供 [service.sh](./service.sh) 管理 Web 服务，[worker.sh](./worker.sh)
+复用相同逻辑管理 ARQ worker。生产环境需要依次启动两者：
+
+```bash
+./worker.sh start
+./service.sh start
+```
+
+常用命令：
 
 ```bash
 ./service.sh start     # 启动
@@ -191,12 +212,15 @@ fastapi-template/
 ./service.sh kill      # 强制结束
 ./service.sh restart   # 重启
 ./service.sh status    # 查看状态
+./service.sh logs      # 实时查看日志
 ```
 
-脚本默认执行：
+脚本按以下顺序选择 Python：`PYTHON_BIN`、`.venv/bin/python`、
+`venv/bin/python`、系统 `python3`。也可以使用 uv：
 
 ```bash
-venv/bin/python main.py pro
+RUNNER=uv ./service.sh start
+RUNNER=uv ./worker.sh start
 ```
 
 可通过环境变量覆盖默认配置：
@@ -204,6 +228,9 @@ venv/bin/python main.py pro
 ```bash
 PYTHON_BIN=/usr/local/bin/python3 LOG_DIR=/var/log/fastapi ./service.sh start
 ```
+
+Web 标准输出保存在 `logs/process.log`，ARQ 标准输出保存在
+`logs/arq-process.log`。
 
 生产部署建议配合 Nginx、Caddy 或其他网关使用，负责 HTTPS、反向代理、静态资源缓存和访问控制。
 
@@ -217,6 +244,7 @@ fastapi-template/
 │   │   ├── DatabaseConfig.py       # MySQL / Redis 配置
 │   │   ├── EmailConfig.py          # 邮件配置
 │   │   ├── ServerConfig.py         # 服务、CORS、Token 等配置
+│   │   ├── WorkerConfig.py         # ARQ 队列、重试和并发配置
 │   │   └── __init__.py             # 读取 config.yaml
 │   ├── dependency/                 # 依赖注入
 │   │   └── AuthDependency.py       # Token 解析、登录校验、当前用户
@@ -251,11 +279,15 @@ fastapi-template/
 │   │   ├── TimeUtil.py
 │   │   ├── TokenUtil.py
 │   │   └── WebSocketUtil.py
-│   └── dispatch.py                 # 异步后台任务和请求日志写入
+│   └── worker/                     # ARQ 生产端、任务函数与 worker 配置
+│       ├── __init__.py
+│       ├── Task.py
+│       └── Worker.py
 ├── docs/                           # 项目截图
 ├── config-template.yaml            # 配置模板
-├── main.py                         # 启动入口
-├── service.sh                      # 生产进程管理脚本
+├── main.py                         # Web / ARQ worker 统一启动入口
+├── service.sh                      # Web 服务进程管理脚本
+├── worker.sh                       # ARQ worker 进程管理脚本
 ├── requirements.txt                # 依赖列表
 └── readme.md
 ```

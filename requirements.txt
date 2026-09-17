@@ -13,3 +13,4 @@ werkzeug
 dbutils
 orjson
 fastadmin
+arq

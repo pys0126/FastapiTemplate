@@ -1,16 +1,17 @@
+from arq.connections import ArqRedis
 from fastapi import Request, Response
-from typing import Optional, Set, Tuple
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import ClientDisconnect
-from application.util.StringUtil import random_uuid
-from application.dispatch import write_request_log, add_task
-from starlette.middleware.base import RequestResponseEndpoint, BaseHTTPMiddleware
 
+from application.config.WorkerConfig import WorkerConfig
+from application.util.StringUtil import random_uuid
+from application.worker import enqueue_task
 
 # 跳过、允许的请求方法（除开GET）
-SKIP_LOG_METHODS: Set[str] = {"OPTIONS"}
-BODY_LOG_METHODS: Set[str] = {"POST", "PUT", "PATCH"}
+SKIP_LOG_METHODS: set[str] = {"OPTIONS"}
+BODY_LOG_METHODS: set[str] = {"POST", "PUT", "PATCH"}
 # 允许的请求体类型
-BODY_LOG_CONTENT_TYPES: Tuple[str, ...] = (
+BODY_LOG_CONTENT_TYPES: tuple[str, ...] = (
     "application/json",
     "application/x-www-form-urlencoded",
     "text/",
@@ -22,7 +23,9 @@ MAX_LOG_BODY_SIZE: int = 4096
 class ProcessMiddleware(BaseHTTPMiddleware):
     """请求响应相关中间件类"""
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """
         请求响应中间件处理器
         :param request: 请求对象
@@ -52,17 +55,23 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         """
         # 获取真实请求IP
         request_ip: str = ProcessMiddleware.get_client_ip(request=request)
-        request_body: Optional[str] = await ProcessMiddleware.get_request_body(request=request)
-        # 后台写入请求日志
-        add_task(
-            write_request_log,
-            request.headers.get("authorization"),
-            request_body,
-            request_ip,
-            request.method,
-            request.url.path,
-            request.url.query or None,
-            request_id
+        request_body: str | None = await ProcessMiddleware.get_request_body(
+            request=request
+        )
+        # 请求主链路只写入Redis队列，数据库操作由独立ARQ worker执行
+        task_pool: ArqRedis | None = getattr(request.app.state, "task_pool", None)
+        await enqueue_task(
+            task_pool,
+            "write_request_log",
+            token=request.headers.get("authorization"),
+            request_body=request_body,
+            request_ip=request_ip,
+            method=request.method,
+            url_path=request.url.path,
+            query_params=request.url.query or None,
+            request_id=request_id,
+            _job_id=f"request-log:{request_id}",
+            _expires=WorkerConfig.job_expires,
         )
 
     @staticmethod
@@ -72,7 +81,7 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         :param request: 请求对象
         :return:
         """
-        forwarded_for: Optional[str] = request.headers.get("x-forwarded-for")
+        forwarded_for: str | None = request.headers.get("x-forwarded-for")
         if forwarded_for:
             return forwarded_for.split(",", 1)[0].strip()
         if request.client is None:
@@ -80,7 +89,7 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         return request.client.host
 
     @staticmethod
-    async def get_request_body(request: Request) -> Optional[str]:
+    async def get_request_body(request: Request) -> str | None:
         """
         获取用于日志记录的请求体。只记录小体积文本请求，避免大请求和文件上传阻塞主链路。
         :param request: 请求对象
@@ -88,7 +97,7 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         """
         if request.method not in BODY_LOG_METHODS:
             return None
-        content_length: Optional[str] = request.headers.get("content-length")
+        content_length: str | None = request.headers.get("content-length")
         if content_length is None:
             return None
         try:

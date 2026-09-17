@@ -17,6 +17,17 @@ ServerConfig:
     allow_methods: ['*']
     allow_headers: ['*']
 
+# ARQ后台任务配置
+WorkerConfig:
+  queue_name: 'arq:queue:fastapi-template'  # Redis任务队列名称
+  max_jobs: 5  # 单个ARQ worker最大并发任务数
+  job_timeout: 10  # 单个任务超时时间（秒）
+  max_tries: 3  # 单个任务最大执行次数
+  retry_delay: 2  # 任务失败后的重试延迟（秒）
+  job_expires: 60  # 排队任务过期时间（秒）
+  enqueue_timeout: 0.5  # Web进程入队超时时间（秒）
+  shutdown_timeout: 10  # Worker优雅关闭等待时间（秒）
+
 # 邮箱配置
 EmailConfig:
   email_from: 'xxx@163.com'  # 发件邮箱

@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-APP_NAME="fastapi[uvicorn]"
-APP_MODE="pro"
+APP_NAME="${APP_NAME:-fastapi[uvicorn]}"
+APP_MODE="${APP_MODE:-pro}"
+RUNNER="${RUNNER:-auto}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_ENTRY="${APP_ENTRY:-${SCRIPT_DIR}/main.py}"
@@ -11,179 +12,212 @@ RUNTIME_DIR="${RUNTIME_DIR:-${SCRIPT_DIR}}"
 PID_FILE="${PID_FILE:-${RUNTIME_DIR}/${APP_NAME}.pid}"
 LOG_DIR="${LOG_DIR:-${SCRIPT_DIR}/logs}"
 LOG_FILE="${LOG_FILE:-${LOG_DIR}/process.log}"
+STOP_TIMEOUT="${STOP_TIMEOUT:-15}"
+LOG_LINES="${LOG_LINES:-100}"
 
-if [[ -x "${SCRIPT_DIR}/venv/bin/python" ]]; then
-  PYTHON_BIN="${PYTHON_BIN:-${SCRIPT_DIR}/venv/bin/python}"
-else
-  PYTHON_BIN="${PYTHON_BIN:-python3}"
-fi
+RUN_COMMAND=()
+RUNNER_LABEL=""
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") {start|stop|kill|restart|status}
+Usage: $(basename "$0") {start|stop|kill|restart|status|logs}
 
 Commands:
-  start    Start ${APP_NAME} in production mode.
-  stop     Gracefully stop the running process.
-  kill     Force kill the running process.
+  start    Start ${APP_NAME}.
+  stop     Gracefully stop ${APP_NAME}.
+  kill     Force stop ${APP_NAME}.
   restart  Restart the service.
   status   Show current process status.
+  logs     Follow the process log.
 
-Environment overrides:
+Runner:
+  RUNNER=auto  Use PYTHON_BIN, .venv, venv, then python3 (default).
+  RUNNER=uv    Use uv with requirements.txt.
+
+Overrides:
   PYTHON_BIN=/path/to/python
   APP_ENTRY=/path/to/main.py
+  APP_MODE=pro
   PID_FILE=/path/to/app.pid
   LOG_DIR=/path/to/logs
-  LOG_FILE=/path/to/app.log
+  STOP_TIMEOUT=15
 EOF
 }
 
-ensure_dirs() {
-  mkdir -p "${RUNTIME_DIR}" "${LOG_DIR}"
+
+message() {
+  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S%z')" "$*"
 }
+
+
+resolve_runner() {
+  if [[ "${RUNNER}" == "uv" ]]; then
+    command -v uv >/dev/null 2>&1 || {
+      echo "uv not found in PATH." >&2
+      return 1
+    }
+    RUN_COMMAND=(
+      uv run
+      --with-requirements "${SCRIPT_DIR}/requirements.txt"
+      python
+    )
+    RUNNER_LABEL="uv"
+    return
+  fi
+
+  [[ "${RUNNER}" == "auto" ]] || {
+    echo "RUNNER must be auto or uv, got: ${RUNNER}" >&2
+    return 1
+  }
+
+  if [[ -n "${PYTHON_BIN:-}" ]]; then
+    RUN_COMMAND=("${PYTHON_BIN}")
+    RUNNER_LABEL="${PYTHON_BIN}"
+  elif [[ -x "${SCRIPT_DIR}/.venv/bin/python" ]]; then
+    RUN_COMMAND=("${SCRIPT_DIR}/.venv/bin/python")
+    RUNNER_LABEL=".venv/bin/python"
+  elif [[ -x "${SCRIPT_DIR}/venv/bin/python" ]]; then
+    RUN_COMMAND=("${SCRIPT_DIR}/venv/bin/python")
+    RUNNER_LABEL="venv/bin/python"
+  else
+    RUN_COMMAND=(python3)
+    RUNNER_LABEL="python3"
+  fi
+
+  command -v "${RUN_COMMAND[0]}" >/dev/null 2>&1 || {
+    echo "Python executable not found: ${RUN_COMMAND[0]}" >&2
+    return 1
+  }
+}
+
 
 read_pid() {
-  if [[ -f "${PID_FILE}" ]]; then
-    tr -d '[:space:]' < "${PID_FILE}"
-  fi
+  [[ -f "${PID_FILE}" ]] && awk 'NR == 1 {print $1}' "${PID_FILE}"
 }
+
 
 is_running() {
-  local pid="${1:-}"
-  [[ -n "${pid}" ]] && kill -0 "${pid}" >/dev/null 2>&1
+  local pid
+  pid="$(read_pid 2>/dev/null || true)"
+  [[ "${pid}" =~ ^[1-9][0-9]*$ ]] && kill -0 "${pid}" >/dev/null 2>&1
 }
 
+
 remove_stale_pid() {
-  local pid
-  pid="$(read_pid || true)"
-  if [[ -n "${pid}" ]] && ! is_running "${pid}"; then
+  if [[ -f "${PID_FILE}" ]] && ! is_running; then
     rm -f "${PID_FILE}"
   fi
 }
 
-child_pids() {
-  local pid="${1}"
-  pgrep -P "${pid}" 2>/dev/null || true
-}
 
 start_app() {
-  ensure_dirs
+  [[ -f "${APP_ENTRY}" ]] || {
+    echo "App entry not found: ${APP_ENTRY}" >&2
+    return 1
+  }
+  [[ -f "${SCRIPT_DIR}/config.yaml" ]] || {
+    echo "config.yaml not found." >&2
+    return 1
+  }
+  resolve_runner
+  mkdir -p "${RUNTIME_DIR}" "${LOG_DIR}"
   remove_stale_pid
 
-  local pid
-  pid="$(read_pid || true)"
-  if is_running "${pid}"; then
-    echo "${APP_NAME} is already running. pid=${pid}"
-    return 0
-  fi
-
-  if [[ ! -f "${APP_ENTRY}" ]]; then
-    echo "App entry not found: ${APP_ENTRY}" >&2
-    exit 1
-  fi
-
-  if [[ ! -f "${SCRIPT_DIR}/config.yaml" ]]; then
-    echo "config.yaml not found. Create it from config-template.yaml before starting." >&2
-    exit 1
+  if is_running; then
+    message "${APP_NAME} is already running. pid=$(read_pid)"
+    return
   fi
 
   cd "${SCRIPT_DIR}"
-  nohup "${PYTHON_BIN}" "${APP_ENTRY}" "${APP_MODE}" >> "${LOG_FILE}" 2>&1 &
-  pid="$!"
+  nohup env PYTHONUNBUFFERED=1 \
+    "${RUN_COMMAND[@]}" "${APP_ENTRY}" "${APP_MODE}" \
+    >> "${LOG_FILE}" 2>&1 &
+  local pid="$!"
   echo "${pid}" > "${PID_FILE}"
-
   sleep 1
-  if is_running "${pid}"; then
-    echo "${APP_NAME} started. pid=${pid}, log=${LOG_FILE}"
-  else
-    rm -f "${PID_FILE}"
-    echo "${APP_NAME} failed to start. Check log: ${LOG_FILE}" >&2
-    exit 1
+
+  if is_running; then
+    message "${APP_NAME} started. pid=${pid}, runner=${RUNNER_LABEL}"
+    echo "log: ${LOG_FILE}"
+    return
   fi
+
+  rm -f "${PID_FILE}"
+  message "${APP_NAME} failed to start. Check ${LOG_FILE}"
+  return 1
 }
+
 
 stop_app() {
   remove_stale_pid
-
-  local pid
-  pid="$(read_pid || true)"
-  if ! is_running "${pid}"; then
-    echo "${APP_NAME} is not running."
-    return 0
+  if ! is_running; then
+    message "${APP_NAME} is not running."
+    return
   fi
 
-  echo "Stopping ${APP_NAME}. pid=${pid}"
-  kill "${pid}" >/dev/null 2>&1 || true
+  local pid
+  pid="$(read_pid)"
+  message "Stopping ${APP_NAME}. pid=${pid}"
+  kill -TERM "${pid}" >/dev/null 2>&1 || true
 
-  for _ in {1..30}; do
-    if ! is_running "${pid}"; then
-      rm -f "${PID_FILE}"
-      echo "${APP_NAME} stopped."
-      return 0
-    fi
+  local elapsed=0
+  while kill -0 "${pid}" >/dev/null 2>&1 && (( elapsed < STOP_TIMEOUT )); do
     sleep 1
+    elapsed=$((elapsed + 1))
   done
 
-  echo "${APP_NAME} did not stop within 30s. Use './$(basename "$0") kill' to force kill." >&2
-  exit 1
+  if kill -0 "${pid}" >/dev/null 2>&1; then
+    message "Stop timed out. Run './$(basename "$0") kill'."
+    return 1
+  fi
+
+  rm -f "${PID_FILE}"
+  message "${APP_NAME} stopped."
 }
+
 
 kill_app() {
   remove_stale_pid
-
-  local pid
-  pid="$(read_pid || true)"
-  if ! is_running "${pid}"; then
-    echo "${APP_NAME} is not running."
-    rm -f "${PID_FILE}"
-    return 0
+  if ! is_running; then
+    message "${APP_NAME} is not running."
+    return
   fi
 
-  echo "Force killing ${APP_NAME}. pid=${pid}"
-  child_pids "${pid}" | xargs -r kill -9 2>/dev/null || true
-  kill -9 "${pid}" >/dev/null 2>&1 || true
+  local pid
+  pid="$(read_pid)"
+  pkill -KILL -P "${pid}" >/dev/null 2>&1 || true
+  kill -KILL "${pid}" >/dev/null 2>&1 || true
   rm -f "${PID_FILE}"
-  echo "${APP_NAME} killed."
+  message "${APP_NAME} was force stopped. pid=${pid}"
 }
+
 
 status_app() {
   remove_stale_pid
-
-  local pid
-  pid="$(read_pid || true)"
-  if is_running "${pid}"; then
-    echo "${APP_NAME} is running. pid=${pid}"
-    local children
-    children="$(child_pids "${pid}" | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-    if [[ -n "${children}" ]]; then
-      echo "worker pids: ${children}"
-    fi
+  if is_running; then
+    echo "${APP_NAME} is running. pid=$(read_pid)"
     echo "log: ${LOG_FILE}"
   else
     echo "${APP_NAME} is not running."
   fi
 }
 
+
+follow_logs() {
+  mkdir -p "${LOG_DIR}"
+  touch "${LOG_FILE}"
+  tail -n "${LOG_LINES}" -f "${LOG_FILE}"
+}
+
+
 case "${1:-}" in
-  start)
-    start_app
-    ;;
-  stop)
-    stop_app
-    ;;
-  kill)
-    kill_app
-    ;;
-  restart)
-    stop_app
-    start_app
-    ;;
-  status)
-    status_app
-    ;;
-  -h|--help|help|"")
-    usage
-    ;;
+  start) start_app ;;
+  stop) stop_app ;;
+  kill) kill_app ;;
+  restart) stop_app && start_app ;;
+  status) status_app ;;
+  logs) follow_logs ;;
+  -h|--help|help|"") usage ;;
   *)
     echo "Unknown command: $1" >&2
     usage >&2
