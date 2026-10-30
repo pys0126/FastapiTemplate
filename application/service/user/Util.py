@@ -1,25 +1,4 @@
-import random
-import string
-from typing import Optional
-from application.config import CAPTCHA_KEY
-from application.util.RedisUtil import redis_util
-from application.service.user.Model import UserModel
 from application.util.StringUtil import sha1_encode, md5_encode
-
-
-async def verify_captcha(key: str, captcha: str) -> bool:
-    """
-    验证验证码
-    :param key: 手机号/邮箱
-    :param captcha: 验证码
-    :return:
-    """
-    result: Optional[str] = await redis_util.get_value(key=CAPTCHA_KEY + key)
-    if result is None or captcha != result:
-        return False
-    # 删除验证码
-    await redis_util.delete_by_key(key=CAPTCHA_KEY + key)
-    return True
 
 
 def encode_password(password: str) -> str:
@@ -30,18 +9,3 @@ def encode_password(password: str) -> str:
     """
     # sha1(md5)
     return sha1_encode(md5_encode(password))
-
-
-async def generate_username(length: int = 6) -> str:
-    """
-    生成随机用户名
-    :param length: 长度
-    :return:
-    """
-    characters = string.ascii_letters + string.digits
-    random_part = "".join(random.choice(characters) for _ in range(length))
-    username = "user_" + random_part
-    # 如果用户名已存在，则重新生成
-    if await UserModel.exists(username=username):
-        return await generate_username(length=length)
-    return username

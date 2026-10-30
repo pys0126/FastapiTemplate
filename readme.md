@@ -166,24 +166,24 @@ http://127.0.0.1:7878/admin
 
 ## 接口测试
 
-项目内置接口测试模块，测试文件位于：
+测试目录位于项目根目录：
 
 ```text
-application/tests/
+tests/
 ```
 
 当前示例：
 
 ```text
-application/tests/UserTest.py
+tests/test_user.py
 ```
 
-测试模块通过 `application.tests.with_test` 装饰器创建 `TestClient`，并在执行测试接口前自动登录，将登录返回的 Token 写入 `Authorization` 请求头，便于测试需要用户态的接口。
+示例使用标准库 `unittest`，通过独立的 FastAPI 测试应用挂载用户路由，并模拟业务逻辑，验证接口参数和响应；无需连接 MySQL、Redis 或自动登录。需要验证完整应用、鉴权及中间件时，可另写集成测试并准备隔离的测试数据库与服务，避免使用生产配置。
 
-命令行运行示例：
+从项目根目录运行全部测试：
 
 ```bash
-python application/tests/UserTest.py
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 在 PyCharm、VS Code 等 IDE 中直接运行测试文件时，需要将运行配置的工作目录设置为项目根目录：
@@ -192,7 +192,7 @@ python application/tests/UserTest.py
 fastapi-template/
 ```
 
-也就是包含 `main.py`、`config.yaml`、`application/` 的目录。项目配置读取和包导入都依赖项目根目录作为工作目录；如果工作目录设置为 `application/tests/`，可能会出现找不到配置文件或模块导入失败的问题。
+也就是包含 `main.py`、`config.yaml`、`application/`、`tests/` 的目录。项目配置读取和包导入都依赖项目根目录作为工作目录；如果工作目录设置为 `tests/`，可能会出现找不到配置文件或模块导入失败的问题。
 
 ## 生产启动脚本
 
@@ -264,9 +264,6 @@ fastapi-template/
 │   │   ├── common/                 # 通用服务，如验证码
 │   │   ├── system/                 # 系统模块，如请求日志/响应日志后台管理
 │   │   └── user/                   # 用户模块，含用户接口、模型、后台管理
-│   ├── tests/                      # 接口测试模块
-│   │   ├── __init__.py             # 测试装饰器和 TestClient 初始化
-│   │   └── UserTest.py             # 用户接口测试示例
 │   ├── util/                       # 工具包
 │   │   ├── CommonUtil.py
 │   │   ├── EmailUtil.py
@@ -284,6 +281,9 @@ fastapi-template/
 │       ├── Task.py
 │       └── Worker.py
 ├── docs/                           # 项目截图
+├── tests/                          # 独立测试目录
+│   ├── __init__.py
+│   └── test_user.py                 # 用户接口测试示例
 ├── config-template.yaml            # 配置模板
 ├── main.py                         # Web / ARQ worker 统一启动入口
 ├── service.sh                      # Web 服务进程管理脚本
@@ -348,7 +348,7 @@ application/service/system/Admin.py
 - 保留真实主键字段，兼容 fastadmin 的修改、删除、行选择逻辑。
 - 修改数据时自动过滤主键和只读字段，避免更新主键报错。
 - 内置批量删除动作。
-- 支持 widget action 图表统计，例如用户统计、请求统计。
+- 支持 widget action 图表统计，例如请求统计。
 
 用户后台示例：
 
@@ -356,9 +356,9 @@ application/service/system/Admin.py
 @register(UserModel)
 class UserAdmin(BaseAdmin):
     menu_section = "业务管理"
-    list_display = ["id", "username", "nickname", "email", "phone"]
-    list_filter = ["sex", "is_disabled"]
-    search_fields = ["username", "nickname", "email", "phone"]
+    list_display = ["id", "avatar", "username", "nickname", "intro", "is_disabled", "is_employee", "is_superuser"]
+    list_filter = ["is_disabled", "is_employee", "is_superuser"]
+    search_fields = ["username", "nickname"]
     ordering = ["-id"]
 ```
 
@@ -436,8 +436,8 @@ raise BasicException(status_code=StatusCodeEnum.USER_NOT_FOUND)
 
 用户模块包含：
 
-- 注册
-- 登录
+- 用户名、头像、昵称、密码和简介资料；后台可管理禁用、员工和超级管理员权限标记
+- 用户名、密码注册与登录（注册时可选填头像和简介）
 - Token 生成与校验
 - 当前用户依赖
 - 超级管理员识别
@@ -496,7 +496,7 @@ python main.py pro
 运行接口测试：
 
 ```bash
-python application/tests/UserTest.py
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 停止后台进程：
@@ -513,7 +513,7 @@ python application/tests/UserTest.py
 - 配置项统一放入 `config.yaml`，不要在业务代码中硬编码。
 - 业务错误优先使用 `BasicException` 和 `StatusCodeEnum`。
 - 涉及用户态的接口优先复用 `AuthDependency.py` 中的依赖。
-- 新增接口测试建议放在 `application/tests/` 下，IDE 运行时将工作目录设置为项目根目录。
+- 新增接口测试放在根目录 `tests/` 下，IDE 运行时将工作目录设置为项目根目录。
 - 生产环境建议关闭 `auto_create_table`，使用迁移工具或 SQL 管理表结构。
 
 ## 注意事项

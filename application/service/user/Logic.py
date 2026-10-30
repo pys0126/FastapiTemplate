@@ -4,25 +4,19 @@ from application.util.TokenUtil import generate_token
 from application.initial.BaseEntity import PagingEntity
 from application.initial.BaseEnum import StatusCodeEnum
 from application.exception.BasicException import BasicException
-from application.service.user.Entity import UserSearchOut, UserAdd, UserLogin, UserOut
-from application.service.user.Util import verify_captcha, encode_password, generate_username
-from application.util.StringUtil import is_valid_password, is_valid_phone_number, is_valid_email
+from application.service.user.Entity import UserAdd, UserLogin, UserOut
+from application.service.user.Util import encode_password
+from application.util.StringUtil import is_valid_password
 
 
 async def get_all_data(page: int, page_size: int) -> PagingEntity:
     """
     获取所有用户数据
-    :return: 简易数据用户列表
+    :return: 用户资料分页列表
     """
-    user_out_list: list = []
     paging_entity: PagingEntity = await UserModel.get_data_list_by_fields(page=page, page_size=page_size,
                                                                           return_model=True)
-    for user_model in paging_entity.items:
-        user_out: UserSearchOut = UserSearchOut(**user_model.to_dict())
-        user_out.fans_num = len(user_model.fans_ids.split(",")) if user_model.fans_ids else 0  # 粉丝数
-        user_out.follow_num = len(user_model.follow_ids.split(",")) if user_model.follow_ids else 0  # 关注数
-        user_out_list.append(user_out)
-    paging_entity.items = user_out_list
+    paging_entity.items = [UserOut(**user_model.to_dict()) for user_model in paging_entity.items]
     return paging_entity
 
 
@@ -32,35 +26,15 @@ async def register(user_add: UserAdd) -> None:
     :param user_add: 用户输入信息
     :return:
     """
-    # 验证手机号格式
-    if user_add.phone:
-        if not is_valid_phone_number(phone_number=str(user_add.phone)):
-            raise BasicException(status_code=StatusCodeEnum.PHONE_FORMAT_ERROR)
-        # 判断手机号是否已存在
-        if await UserModel.exists(phone=user_add.phone):
-            raise BasicException(status_code=StatusCodeEnum.PHONE_ALREADY_EXIST)
-        # 判断验证码是否正确
-        if not await verify_captcha(key=user_add.phone, captcha=user_add.captcha):
-            raise BasicException(status_code=StatusCodeEnum.CAPTCHA_ERROR)
-    # 验证邮箱格式
-    if user_add.email:
-        if not is_valid_email(text=user_add.email):
-            raise BasicException(status_code=StatusCodeEnum.EMAIL_FORMAT_ERROR)
-        # 判断邮箱是否已存在
-        if await UserModel.exists(email=user_add.email):
-            raise BasicException(status_code=StatusCodeEnum.EMAIL_ALREADY_EXIST)
-        # 判断验证码是否正确
-        if not await verify_captcha(key=user_add.email, captcha=user_add.captcha):
-            raise BasicException(status_code=StatusCodeEnum.CAPTCHA_ERROR)
+    # 判断用户名是否已存在
+    if await UserModel.exists(username=user_add.username):
+        raise BasicException(status_code=StatusCodeEnum.ALREADY_EXIST_ERROR)
     # 验证密码格式
     if not is_valid_password(text=user_add.password):
         raise BasicException(status_code=StatusCodeEnum.PASSWORD_FORMAT_ERROR)
-    # 加密密码
-    user_add.password = encode_password(password=user_add.password)
-    # 转换为字典
-    user_dict: dict = user_add.model_dump()
-    # 生成用户名
-    user_dict.update(username=await generate_username())
+    # 只保存用户资料和加密后的密码，未提交的可选资料使用模型默认值
+    user_dict: dict = user_add.model_dump(mode="json", exclude_none=True)
+    user_dict["password"] = encode_password(password=user_add.password)
     # 存入数据
     if not await UserModel.create(**user_dict):
         raise BasicException(status_code=StatusCodeEnum.SERVER_BUSY)
@@ -72,33 +46,15 @@ async def login(user_login: UserLogin) -> str:
     :param user_login: 用户输入信息
     :return: Token
     """
-    user_model: Optional[UserModel] = None
-    if user_login.login_type == "username":
-        # 验证密码格式
-        if not is_valid_password(text=user_login.password):
-            raise BasicException(status_code=StatusCodeEnum.PASSWORD_FORMAT_ERROR)
-        user_model = await UserModel.filter(username=user_login.username).first()
-    elif user_login.login_type == "email":
-        # 验证邮箱格式
-        if not is_valid_email(text=user_login.username):
-            raise BasicException(status_code=StatusCodeEnum.EMAIL_FORMAT_ERROR)
-        user_model = await UserModel.filter(email=user_login.username).first()
-    elif user_login.login_type == "phone":
-        # 验证手机号格式
-        if not is_valid_phone_number(phone_number=user_login.username):
-            raise BasicException(status_code=StatusCodeEnum.PHONE_FORMAT_ERROR)
-        user_model = await UserModel.filter(phone=int(user_login.username)).first()
+    # 验证密码格式
+    if not is_valid_password(text=user_login.password):
+        raise BasicException(status_code=StatusCodeEnum.PASSWORD_FORMAT_ERROR)
+    user_model: Optional[UserModel] = await UserModel.filter(username=user_login.username).first()
     # 验证用户是否存在
     if user_model is None:
         raise BasicException(status_code=StatusCodeEnum.USER_NOT_REGISTERED)
-    # 如果是邮箱/手机号登录，判断验证码是否正确
-    if user_login.login_type in ["email", "phone"]:
-        # 判断验证码是否正确
-        if not await verify_captcha(key=user_login.username, captcha=user_login.captcha):
-            raise BasicException(status_code=StatusCodeEnum.CAPTCHA_ERROR)
     # 密码验证
-    user_login.password = encode_password(password=user_login.password)
-    if user_model.password != user_login.password:
+    if user_model.password != encode_password(password=user_login.password):
         raise BasicException(status_code=StatusCodeEnum.PASSWORD_ERROR)
     # 生成Token
     return await generate_token(user_id=user_model.id)

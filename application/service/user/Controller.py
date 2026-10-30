@@ -1,4 +1,4 @@
-from application.service.user.Entity import UserAdd, UserOut, UserLogin
+from application.service.user.Entity import UserAdd, UserLogin
 from application.dependency.AuthDependency import verify_token
 from application.util.ResponseUtil import ResponseUtil
 from fastapi.responses import JSONResponse
@@ -10,7 +10,7 @@ from pydantic import PositiveInt
 router: APIRouter = APIRouter(prefix="/user", tags=["用户"])
 
 
-@router.get("/all", response_model=UserOut, summary="获取所有用户信息")
+@router.get("/all", summary="获取所有用户信息")
 async def get_all_data(page: PositiveInt = 1, page_size: PositiveInt = 10) -> JSONResponse:
     return ResponseUtil(data=await Logic.get_all_data(page=page, page_size=page_size)).success()
 

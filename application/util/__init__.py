@@ -84,19 +84,14 @@ async def create_initial_user() -> None:
     :return:
     """
     from application.service.user.Util import encode_password
-    from application.service.user.Enum import UserSexEnum
     from application.service.user.Model import UserModel
     user_model: UserModel = UserModel(
         username="admin",
         password=encode_password("admin123"),
         nickname="初始超级用户",
-        email="admin@admin.com",
-        phone="12345678911",
-        sex=UserSexEnum.MALE,
         is_disabled=False,
         is_employee=True,
-        is_superuser=True,
-        address="中国"
+        is_superuser=True
     )
     if await UserModel.all().count() == 0:
         await user_model.save()

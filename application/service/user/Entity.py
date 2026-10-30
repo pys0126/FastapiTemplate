@@ -1,61 +1,33 @@
-from pydantic import EmailStr, AnyHttpUrl, BaseModel, StrictInt, Field
-from application.service.user.Enum import UserSexEnum
-from application.initial.BaseEntity import BaseOutEntity
+from application.initial.BaseEntity import BaseOutEntity, BaseInputEntity
+from pydantic import AnyHttpUrl, Field
 from typing import Optional
 
 
-class UserBase(BaseModel):
-    """
-    用户实体类 - 基类
-    """
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-
-
-class UserAdd(UserBase):
+class UserAdd(BaseInputEntity):
     """
     用户新增实体类
     """
+    username: str = Field(max_length=16, min_length=4, description="用户名")
     nickname: str = Field(max_length=8, min_length=2)
     password: str = Field(min_length=6)
-    captcha: Optional[str] = Field(default=None, max_length=6, min_length=6, description="邮箱/手机验证码")
+    avatar: Optional[AnyHttpUrl] = Field(default=None, description="头像URL")
+    intro: Optional[str] = Field(default=None, max_length=250, description="个人简介")
 
 
-class UserLogin(BaseModel):
+class UserLogin(BaseInputEntity):
     """
-    用户登陆实体类
+    用户登录实体类
     """
-    username: str = Field(max_length=32, min_length=4, description="用户名/邮箱/手机号")
-    password: Optional[str] = Field(min_length=6)
-    captcha: Optional[str] = Field(default=None, max_length=6, min_length=6, description="邮箱/手机验证码")
-    login_type: str = Field(default="username", description="登陆方式，username/email/phone")
+    username: str = Field(max_length=16, min_length=4, description="用户名")
+    password: str = Field(min_length=6)
 
 
-class UserOut(BaseOutEntity, UserBase):
+class UserOut(BaseOutEntity):
     """
     用户输出实体类
     """
     username: str
     nickname: str
-    age: StrictInt
     avatar: AnyHttpUrl
-    sex: str
-    intro: Optional[str] = ""
-    occupation: Optional[str] = ""
-    address: Optional[str] = ""
-    follow_ids: Optional[str] = ""
-    fans_ids: Optional[str] = ""
+    intro: str
     is_disabled: bool
-
-
-class UserSearchOut(BaseOutEntity, BaseModel):
-    """
-    搜索用户时的实体类
-    """
-    avatar: AnyHttpUrl
-    username: str
-    nickname: str
-    sex: str = UserSexEnum.OTHER.value
-    address: Optional[str] = ""
-    follow_num: int = 0  # 关注数
-    fans_num: int = 0  # 粉丝数

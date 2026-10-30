@@ -1,6 +1,13 @@
-from pydantic import BaseModel, StrictInt, field_serializer
+from pydantic import BaseModel, StrictInt, field_serializer, ConfigDict
 from datetime import datetime
 from typing import Optional
+
+
+class BaseInputEntity(BaseModel):
+    """
+    输入实体基类
+    """
+    model_config = ConfigDict(extra="forbid")
 
 
 class BaseOutEntity(BaseModel):
