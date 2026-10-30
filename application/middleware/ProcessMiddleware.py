@@ -1,8 +1,8 @@
 from arq.connections import ArqRedis
 from fastapi import Request, Response
+from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import ClientDisconnect
-
 from application.config.WorkerConfig import WorkerConfig
 from application.util.StringUtil import random_uuid
 from application.worker import enqueue_task
@@ -38,29 +38,49 @@ class ProcessMiddleware(BaseHTTPMiddleware):
         # 生成请求ID
         request_id: str = random_uuid(delimiter=True)
         # 请求处理
-        await ProcessMiddleware.request_dispatch(request=request, request_id=request_id)
-        # 响应处理
-        response: Response = await call_next(request)
+        log_task = await ProcessMiddleware.request_dispatch(
+            request=request, request_id=request_id
+        )
+        try:
+            response: Response = await call_next(request)
+        except Exception:
+            # 异常请求没有正常响应，仍保留原有的日志入队行为。
+            if log_task is not None:
+                await log_task()
+            raise
         # 请求头添加请求ID
         response.headers.update({"x-request-id": request_id})
+        if log_task is not None:
+            # 在响应发送完成后入队，不让 Redis 往返阻塞普通请求返回。
+            if response.background is None:
+                response.background = log_task
+            else:
+                response.background = BackgroundTasks(
+                    [log_task, response.background]
+                )
         return response
 
     @staticmethod
-    async def request_dispatch(request: Request, request_id: str) -> None:
+    async def request_dispatch(
+        request: Request, request_id: str
+    ) -> BackgroundTask | None:
         """
         请求处理器
         :param request: 请求对象
         :param request_id: 请求ID
-        :return: 请求对象
+        :return: 响应发送后执行的日志任务；未配置队列时不创建
         """
+        task_pool: ArqRedis | None = getattr(request.app.state, "task_pool", None)
+        if task_pool is None:
+            return None
         # 获取真实请求IP
         request_ip: str = ProcessMiddleware.get_client_ip(request=request)
         request_body: str | None = await ProcessMiddleware.get_request_body(
             request=request
         )
-        # 请求主链路只写入Redis队列，数据库操作由独立ARQ worker执行
-        task_pool: ArqRedis | None = getattr(request.app.state, "task_pool", None)
-        await enqueue_task(
+        # 响应发送后只写入 Redis 队列，数据库操作由独立 ARQ worker 执行。
+        return BackgroundTask(
+            enqueue_task,
             task_pool,
             "write_request_log",
             token=request.headers.get("authorization"),
