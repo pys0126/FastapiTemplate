@@ -26,7 +26,7 @@ class SystemRequestLogModel(TortoiseBaseModel):
     request_method: str | None = CharField(max_length=8, null=True, description="请求方法")
     request_path: str | None = CharField(max_length=128, null=True, description="请求路径")
     request_query: str | None = TextField(null=True, description="请求参数")
-    request_id: str | None = CharField(max_length=36, default=random_uuid, null=True, description="请求ID")
+    request_id: str = CharField(max_length=36, default=random_uuid, null=False, description="请求ID")
 
     class Meta:
         table: str = "system_request_log"
@@ -43,7 +43,7 @@ class SystemResponseLogModel(TortoiseBaseModel):
     """
     response_body: str | None = TextField(null=True, description="响应体")
     response_headers: str | None = TextField(null=True, description="响应头")
-    request_id: str | None = CharField(max_length=36, default=random_uuid, null=True, description="请求ID")
+    request_id: str = CharField(max_length=36, default=random_uuid, null=False, description="请求ID")
 
     class Meta:
         table: str = "system_response_log"
