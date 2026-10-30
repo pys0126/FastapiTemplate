@@ -1,3 +1,4 @@
+import asyncio
 from typing import Literal
 from application.util.RedisUtil import redis_util
 from application.util.EmailUtil import send_email
@@ -25,9 +26,16 @@ async def send_captcha(target: str, send_type: Literal["email", "phone"]) -> Non
             raise BasicException(status_code=StatusCodeEnum.EMAIL_FORMAT_ERROR)
         code: str = generate_verification_code()  # 生成验证码
         # 发送邮件
-        result: bool = send_email(target_email=target, title=f"[{PROJECT_NAME}] 邮箱验证码",
-                                  content=f"您的验证码是：{code}，"
-                                          f"{int(ServerConfig.captcha_expire // 60)}分钟内有效")
+        # zmail 使用同步 SMTP I/O，移至线程执行以免阻塞事件循环。
+        result: bool = await asyncio.to_thread(
+            send_email,
+            target_email=target,
+            title=f"[{PROJECT_NAME}] 邮箱验证码",
+            content=(
+                f"您的验证码是：{code}，"
+                f"{int(ServerConfig.captcha_expire // 60)}分钟内有效"
+            ),
+        )
     elif send_type == "phone":
         # TODO 模拟发送手机号验证码，实际按需求自定义对接云服务发送
         if await redis_util.get_value(key=redis_key) is not None:
