@@ -1,18 +1,13 @@
 from application.service.user.Entity import UserAdd, UserLogin
-from application.dependency.AuthDependency import verify_token
+from application.dependency.AuthDependency import get_current_user
+from application.service.user.Model import UserModel
 from application.util.ResponseUtil import ResponseUtil
 from fastapi.responses import JSONResponse
 from application.service.user import Logic
 from fastapi import APIRouter, Depends
-from pydantic import PositiveInt
 
 # 设置路由
 router: APIRouter = APIRouter(prefix="/user", tags=["用户"])
-
-
-@router.get("/all", summary="获取所有用户信息")
-async def get_all_data(page: PositiveInt = 1, page_size: PositiveInt = 10) -> JSONResponse:
-    return ResponseUtil(data=await Logic.get_all_data(page=page, page_size=page_size)).success()
 
 
 @router.post("/register", summary="注册用户")
@@ -26,6 +21,6 @@ async def login(user_login: UserLogin) -> JSONResponse:
     return ResponseUtil(data=await Logic.login(user_login=user_login)).success()
 
 
-@router.get("/info/{user_id:int}", summary="根据ID获取用户信息", dependencies=[Depends(verify_token)])
-async def get_user_by_id(user_id: int) -> JSONResponse:
-    return ResponseUtil(data=await Logic.get_user_by_id(user_id=user_id)).success()
+@router.get("/profile", summary="获取当前登录用户信息")
+async def get_profile(user_model: UserModel = Depends(get_current_user)) -> JSONResponse:
+    return ResponseUtil(data=await Logic.get_profile(user_model=user_model)).success()

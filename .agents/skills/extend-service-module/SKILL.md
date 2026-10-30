@@ -31,10 +31,10 @@ description: 在本 FastAPI 模板中新增接口、增加业务功能、修改�
 ## 项目集成点
 
 - `application/util/__init__.py` 的 `register_routers`、`register_admin` 扫描 `application/service` 的直接子目录，导入其中的 `Controller.py`、`Admin.py`；Controller 必须暴露名为 `router` 的对象。`application/config/DatabaseConfig.py` 的 `scan_models` 按 `Model.py` 收集 ORM 模型。`application/__init__.py` 在启动时调用这些注册函数，通常无需手动修改总路由或模型列表。
-- 上述扫描及 `application/config/__init__.py` 的配置加载依赖当前工作目录是仓库根目录。保持模块为可导入的包；在根目录运行检查/服务，确认新路由和模型确实被发现。
+- 上述扫描及 `application/config/__init__.py` 的默认配置路径基于项目根目录；也可通过 `APP_CONFIG` 指定配置文件。保持模块为可导入的包；确认新路由和模型确实被发现。
 - Controller 采用 `async def`、HTTP 方法装饰器及 `summary`；一般 `return ResponseUtil(data=await Logic.xxx(...)).success()`，无需数据时用 `ResponseUtil().success()`。业务失败在 Logic 中抛 `BasicException(status_code=StatusCodeEnum.XXX)`；需要新业务状态码时在 `application/initial/BaseEnum.py` 定义，不自行拼装不一致的响应体。
 - 用户态接口按需要使用 `Depends(verify_token)` 或 `Depends(get_current_user)`（`application/dependency/AuthDependency.py`）；公开接口不强制加鉴权。后台权限与操作继承 `BaseAdmin` 的既有扩展点。
-- ORM 查询/写入为异步调用；输出时按接口契约将模型数据转换为 Entity。使用 `response_model` 时要与**实际返回结构**匹配：当前 `user/Controller.py` 的 `/all` 声明为 `UserOut` 却返回分页包装的 `JSONResponse`，不是可复用的规范。
+- ORM 查询/写入为异步调用；输出时按接口契约将模型数据转换为 Entity。使用 `response_model` 时要与**实际返回结构**匹配；返回 `JSONResponse` 的统一响应不能直接声明为业务实体的 `response_model`。
 - 配置集中在 `config.yaml` 和 `application/config/`，不硬编码密钥或凭据。生产环境不要靠 `auto_create_table` 自动建表；新增/修改表结构需考虑数据库迁移。不要把 `user/Util.py` 的 SHA1(MD5) 密码实现或 `Admin.py` 的模拟上传地址当作新功能的安全模板。
 
 ## 实施与验收

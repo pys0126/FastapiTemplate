@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from application.dependency.AuthDependency import get_current_user
 from application.service.user.Controller import router
 from application.service.user import Logic
 from application.service.user.Entity import UserAdd, UserLogin
 from application.service.user.Model import UserModel
-from application.initial.BaseEntity import PagingEntity
 from application.initial.BaseEnum import StatusCodeEnum
 from application.exception.BasicException import BasicException
 
@@ -21,24 +21,50 @@ class UserControllerTest(unittest.TestCase):
     """验证用户接口的参数和统一响应。"""
 
     def setUp(self) -> None:
-        test_app = FastAPI()
-        test_app.include_router(router)
-        self.client = TestClient(test_app)
+        self.test_app = FastAPI()
+        self.test_app.include_router(router)
+        self.client = TestClient(self.test_app)
         self.addCleanup(self.client.close)
 
-    def test_get_all_data(self) -> None:
-        """列表接口返回分页数据的统一响应。"""
-        paging = {"page": 1, "page_size": 10, "total": 0, "items": []}
-        with patch(
-            "application.service.user.Logic.get_all_data",
-            new_callable=AsyncMock,
-            return_value=paging,
-        ) as get_all_data:
-            response = self.client.get("/user/all", params={"page": 1, "page_size": 10})
+    def test_user_list_route_is_absent(self) -> None:
+        """不再提供获取所有用户信息的接口。"""
+        response = self.client.get("/user/all")
+        self.assertEqual(response.status_code, 404)
+
+    def test_profile_returns_current_user(self) -> None:
+        """资料接口从鉴权依赖获取用户，不接受用户 ID。"""
+        now = datetime(2026, 1, 1)
+        user_data = {
+            "id": 42,
+            "username": "tester",
+            "nickname": "测试用户",
+            "password": "hashed-password",
+            "avatar": "https://example.com/avatar.png",
+            "intro": "个人简介",
+            "is_disabled": False,
+            "create_datetime": now,
+            "update_datetime": now,
+        }
+        self.test_app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+            to_dict=lambda: user_data
+        )
+
+        response = self.client.get("/user/profile")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"code": 2000, "data": paging, "message": "ok"})
-        get_all_data.assert_awaited_once_with(page=1, page_size=10)
+        self.assertEqual(response.json()["data"]["id"], 42)
+        self.assertEqual(response.json()["data"]["username"], "tester")
+        self.assertNotIn("password", response.json()["data"])
+
+    def test_profile_requires_login(self) -> None:
+        """未登录不能获取用户资料。"""
+        response = self.client.get("/user/profile")
+        self.assertEqual(response.status_code, 422)
+
+    def test_old_user_info_route_is_absent(self) -> None:
+        """旧的按 ID 查询接口已移除。"""
+        response = self.client.get("/user/info/42")
+        self.assertEqual(response.status_code, 404)
 
     def test_register(self) -> None:
         """注册接口调用业务逻辑并返回成功响应。"""
@@ -192,35 +218,6 @@ class UserLogicTest(unittest.IsolatedAsyncioTestCase):
         filter_user.assert_called_once_with(username="tester")
         token.assert_awaited_once_with(user_id=42)
         self.assertEqual(user_login.password, "abc123")
-
-    async def test_list_excludes_password_and_removed_fields(self) -> None:
-        """列表仅返回公开资料及原有禁用标记。"""
-        now = datetime(2026, 1, 1)
-        user_data = {
-            "id": 42,
-            "username": "tester",
-            "nickname": "测试用户",
-            "password": "hashed-password",
-            "avatar": "https://example.com/avatar.png",
-            "intro": "个人简介",
-            "is_disabled": False,
-            "create_datetime": now,
-            "update_datetime": now,
-            "email": "legacy@example.com",
-        }
-        paging = PagingEntity(page=1, page_size=10, total=1, items=[SimpleNamespace(to_dict=lambda: user_data)])
-        with patch(
-            "application.service.user.Logic.UserModel.get_data_list_by_fields",
-            new_callable=AsyncMock,
-            return_value=paging,
-        ):
-            result = await Logic.get_all_data(page=1, page_size=10)
-
-        self.assertEqual(set(result.items[0].model_dump()), {
-            "id", "username", "nickname", "avatar", "intro", "is_disabled",
-            "create_datetime", "update_datetime",
-        })
-
 
 if __name__ == "__main__":
     unittest.main()
