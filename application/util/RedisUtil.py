@@ -4,6 +4,14 @@ from redis.asyncio import Redis, ConnectionPool
 from application.config.DatabaseConfig import RedisConfig
 
 
+_HASH_DELETE_IF_VALUE = """
+if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then
+    return redis.call('HDEL', KEYS[1], ARGV[1])
+end
+return 0
+"""
+
+
 class RedisUtil:
     def __init__(self) -> None:
         self.redis_pool: ConnectionPool = ConnectionPool(host=RedisConfig.host, port=RedisConfig.port,
@@ -98,6 +106,30 @@ class RedisUtil:
         :return:
         """
         await self.redis_client.hdel(key, *fields)
+
+    async def set_websocket_notice(
+        self, key: str, signal_key: str, field: str, value: bytes
+    ) -> None:
+        """原子写入最新通知并唤醒等待的 WebSocket，信号队列最多保留一项。"""
+        async with self.redis_client.pipeline(transaction=True) as pipeline:
+            pipeline.hset(name=key, key=field, value=value)
+            pipeline.lpush(signal_key, "1")
+            pipeline.ltrim(signal_key, 0, 0)
+            await pipeline.execute()
+
+    async def get_websocket_notices(self, key: str) -> dict[bytes, bytes]:
+        """读取用户当前待发送的通知。"""
+        return await self.redis_client.hgetall(key)
+
+    async def wait_websocket_signal(self, signal_key: str) -> None:
+        """阻塞等待新通知；连接断开时由调用方取消等待。"""
+        await self.redis_client.blpop(signal_key, timeout=0)
+
+    async def delete_websocket_notice_if_value(
+        self, key: str, field: str, value: bytes
+    ) -> None:
+        """只清除已发送的版本，避免覆盖期间删掉更新的通知。"""
+        await self.redis_client.eval(_HASH_DELETE_IF_VALUE, 1, key, field, value)
 
     async def get_value(self, key: str) -> Optional[str]:
         """

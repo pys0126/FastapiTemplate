@@ -36,13 +36,14 @@ class ModelFieldTest(unittest.TestCase):
                 self.assertIsInstance(first_id, str)
                 self.assertNotEqual(first_id, second_id)
 
-    def test_base_timestamps_accept_none_before_save(self) -> None:
-        """自动生成的时间字段在保存前可能为空。"""
+    def test_base_timestamps_are_non_nullable_fields(self) -> None:
+        """数据库时间字段非空；尚未保存的模型实例可尚未赋值。"""
         annotations = get_type_hints(TortoiseBaseModel)
         for field_name in ("create_datetime", "update_datetime"):
             with self.subTest(field=field_name):
-                self.assertIn(datetime, get_args(annotations[field_name]))
-                self.assertIn(type(None), get_args(annotations[field_name]))
+                self.assertIs(annotations[field_name], datetime)
+                self.assertFalse(TortoiseBaseModel._meta.fields_map[field_name].null)
+                self.assertIsNone(getattr(UserModel(), field_name))
 
 
 if __name__ == "__main__":

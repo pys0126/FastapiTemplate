@@ -42,7 +42,12 @@ class WebSocketUtil:
         :return:
         """
         try:
-            await redis_util.hash_set(key=f"{WEBSOCKET_KEY}{user_id}", field=notice_type.value,
-                                      value=orjson.dumps({"type": notice_type.value, "message": message}).decode("u8"))
+            key = f"{WEBSOCKET_KEY}{user_id}"
+            await redis_util.set_websocket_notice(
+                key=key,
+                signal_key=f"{key}:signal",
+                field=notice_type.value,
+                value=orjson.dumps({"type": notice_type.value, "message": message}),
+            )
         except Exception:
             pass

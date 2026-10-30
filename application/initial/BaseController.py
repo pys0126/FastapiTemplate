@@ -1,14 +1,15 @@
-from application.initial.BaseEnum import WebsocketNoticeTypeEnum
-from starlette.websockets import WebSocket, WebSocketDisconnect
-from application.util.WebSocketUtil import WebSocketUtil
-from application.util.ResponseUtil import ResponseUtil
-from application.util.RedisUtil import redis_util
-from starlette.responses import JSONResponse
-from application.config import WEBSOCKET_KEY
-from datetime import datetime
-from fastapi import APIRouter
-from typing import Optional
+import asyncio
+
 import orjson
+from fastapi import APIRouter
+from starlette.responses import JSONResponse
+from starlette.websockets import WebSocket, WebSocketDisconnect
+
+from application.config import WEBSOCKET_KEY
+from application.initial.BaseEnum import WebsocketNoticeTypeEnum
+from application.util.RedisUtil import redis_util
+from application.util.ResponseUtil import ResponseUtil
+from application.util.WebSocketUtil import WebSocketUtil
 
 router: APIRouter = APIRouter(prefix="", tags=["根路径"])
 
@@ -28,20 +29,51 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int) -> None:
     WS接口
     :return:
     """
-    if await WebSocketUtil.connect(user_id=user_id, websocket=websocket):
-        try:
-            while True:
-                # 遍历通知类型枚举
-                for notice_type in WebsocketNoticeTypeEnum:
-                    # 监听当前通知类型Redis缓存的消息
-                    message: Optional[str] = await redis_util.hash_get(key=f"{WEBSOCKET_KEY}{user_id}",
-                                                                       field=notice_type.value)
-                    # 如果没有消息，则进行下一个循环
-                    if not message: continue
-                    # 发送WS消息
-                    await websocket.send_json(data=orjson.loads(message))
-                    print(f"{str(datetime.now())}\t用户<{user_id}>推送Websocket消息：{message.decode('u8')}！")
-                    # 清理当前通知类型Redis缓存
-                    await redis_util.hash_del(key=f"{WEBSOCKET_KEY}{user_id}", fields=[notice_type.value])
-        except WebSocketDisconnect:
-            print(f"\t用户<{user_id}>断开了Websocket连接！")
+    if not await WebSocketUtil.connect(user_id=user_id, websocket=websocket):
+        return
+    key = f"{WEBSOCKET_KEY}{user_id}"
+    signal_key = f"{key}:signal"
+    disconnect_task = asyncio.create_task(_wait_for_disconnect(websocket))
+    signal_task: asyncio.Task[None] | None = None
+    try:
+        while not disconnect_task.done():
+            # 建立连接时先处理历史通知，之后只在新通知到达时读取 Redis。
+            notices = await redis_util.get_websocket_notices(key)
+            for notice_type in WebsocketNoticeTypeEnum:
+                message = notices.get(notice_type.value.encode("utf-8"))
+                if message is None:
+                    continue
+                await websocket.send_json(data=orjson.loads(message))
+                await redis_util.delete_websocket_notice_if_value(
+                    key, notice_type.value, message
+                )
+            if disconnect_task.done():
+                break
+            signal_task = asyncio.create_task(
+                redis_util.wait_websocket_signal(signal_key)
+            )
+            done, _ = await asyncio.wait(
+                (disconnect_task, signal_task),
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if disconnect_task in done:
+                disconnect_task.result()
+                break
+            signal_task.result()
+            signal_task = None
+    except WebSocketDisconnect:
+        pass
+    finally:
+        for task in (signal_task, disconnect_task):
+            if task is not None and not task.done():
+                task.cancel()
+        await asyncio.gather(
+            *(task for task in (signal_task, disconnect_task) if task is not None),
+            return_exceptions=True,
+        )
+
+
+async def _wait_for_disconnect(websocket: WebSocket) -> None:
+    """持续接收客户端事件，以便在空闲时及时结束 Redis 阻塞等待。"""
+    while (await websocket.receive())["type"] != "websocket.disconnect":
+        pass
