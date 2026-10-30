@@ -1,13 +1,6 @@
-import platform
 from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from typing import Any
-
-import uvicorn
-from arq.worker import run_worker
-
-from application.config.ServerConfig import ServerConfig
-from application.worker.Worker import WorkerSettings
 
 
 def create_parser() -> ArgumentParser:
@@ -26,14 +19,19 @@ def create_parser() -> ArgumentParser:
 
 def run_web(start_mode: str) -> None:
     """启动Uvicorn Web服务。"""
+    import uvicorn
+
+    from application.config import PROJECT_ROOT
+    from application.config.ServerConfig import ServerConfig
+
     params: dict[str, Any] = {
         "app": "application:app",
         "host": ServerConfig.host,
         "port": ServerConfig.port,
-        "loop": "uvloop" if platform.system() == "Linux" else "asyncio",
+        "loop": "auto",  # 有 uvloop 时自动启用，缺失时退回 asyncio。
     }
     if start_mode == "dev":
-        params.update(reload=True)
+        params.update(reload=True, reload_dirs=[str(PROJECT_ROOT)])
     elif start_mode == "pro":
         params.update(workers=ServerConfig.workers)
     uvicorn.run(**params)
@@ -43,6 +41,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     """根据启动模式运行Web服务或ARQ worker。"""
     args: Namespace = create_parser().parse_args(argv)
     if args.start_mode == "worker":
+        from arq.worker import run_worker
+
+        from application.worker.Worker import WorkerSettings
+
         run_worker(WorkerSettings)
         return
     run_web(start_mode=args.start_mode)

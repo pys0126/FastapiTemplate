@@ -1,6 +1,5 @@
-import os
 import logging
-import platform
+import os
 from fastapi import FastAPI
 from application.initial import lifespan
 from application.config import PROJECT_NAME
@@ -15,14 +14,6 @@ from application.config.DatabaseConfig import MysqlConfig
 from application.config.ServerConfig import ServerConfig, CORSConfig
 from application.middleware.ProcessMiddleware import ProcessMiddleware
 from application.util import register_routers, register_exceptions, register_middleware, register_admin
-
-# 加速事件循环
-if platform.system() == "Linux":
-    import uvloop
-    uvloop.install()
-
-# 创建日志目录（如果不存在）
-os.makedirs(name=ServerConfig.log_dir, exist_ok=True)
 
 # 配置Tortoise ORM日志等级
 logger: logging.Logger = logging.getLogger("tortoise")

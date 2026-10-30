@@ -1,12 +1,25 @@
-import yaml
 import os
+from pathlib import Path
+import yaml
 
-# yaml文件路径
-YAML_PATH: str = os.path.join(os.getcwd(), "config.yaml")
+# 默认配置与代码同处项目目录；显式路径相对启动时的工作目录解析。
+PROJECT_ROOT: Path = Path(__file__).resolve().parents[2]
+YAML_PATH: Path = Path(
+    os.environ.get("APP_CONFIG", PROJECT_ROOT / "config.yaml")
+).expanduser().resolve()
 
-# 读取yaml文件
-with open(YAML_PATH, mode="r", encoding="u8") as file:
-    YAML_CONTENT: dict = yaml.load(file, Loader=yaml.FullLoader)
+try:
+    with YAML_PATH.open(encoding="utf-8") as file:
+        YAML_CONTENT = yaml.safe_load(file)
+except FileNotFoundError as exc:
+    raise FileNotFoundError(
+        f"配置文件不存在: {YAML_PATH}；请从 config-template.yaml 创建配置，或设置 APP_CONFIG"
+    ) from exc
+except yaml.YAMLError as exc:
+    raise ValueError(f"配置文件 YAML 格式错误: {YAML_PATH}") from exc
+
+if not isinstance(YAML_CONTENT, dict):
+    raise ValueError(f"配置文件必须是 YAML 映射: {YAML_PATH}")
 
 # 项目名称
 PROJECT_NAME: str = YAML_CONTENT.get("ProjectName", "TestSystem")

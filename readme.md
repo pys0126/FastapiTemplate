@@ -126,7 +126,9 @@ DatabaseConfig:
     db: 6
 ```
 
-`config.yaml` 应作为本地私有配置文件使用，不建议提交到版本库。
+`config.yaml` 应作为本地私有配置文件使用，不建议提交到版本库。默认从项目根目录读取；可设置 `APP_CONFIG=/path/to/config.yaml` 使用其他配置文件，支持从任意工作目录启动。`log_dir` 相对路径以项目根目录为基准，也可设为绝对路径；Web 和 worker 共用相同配置。必须设置 `ServerConfig.secret_key`，也可用 `APP_SECRET_KEY` 覆盖；多进程和 worker 应使用相同密钥。
+
+生产环境可用 `python -c 'import secrets; print(secrets.token_urlsafe(32))'` 生成密钥，并妥善保管；不要沿用模板中的示例值。
 
 ### 4. 启动项目
 
@@ -186,13 +188,7 @@ tests/test_user.py
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-在 PyCharm、VS Code 等 IDE 中直接运行测试文件时，需要将运行配置的工作目录设置为项目根目录：
-
-```text
-fastapi-template/
-```
-
-也就是包含 `main.py`、`config.yaml`、`application/`、`tests/` 的目录。项目配置读取和包导入都依赖项目根目录作为工作目录；如果工作目录设置为 `tests/`，可能会出现找不到配置文件或模块导入失败的问题。
+在 PyCharm、VS Code 等 IDE 中直接运行测试文件时，需保证项目根目录在 Python 的模块搜索路径中。配置文件读取与模块扫描不依赖运行时的工作目录。
 
 ## 生产启动脚本
 
@@ -227,6 +223,7 @@ RUNNER=uv ./worker.sh start
 
 ```bash
 PYTHON_BIN=/usr/local/bin/python3 LOG_DIR=/var/log/fastapi ./service.sh start
+APP_CONFIG=/etc/fastapi-template/config.yaml ./worker.sh start
 ```
 
 Web 标准输出保存在 `logs/process.log`，ARQ 标准输出保存在

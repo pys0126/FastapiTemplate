@@ -1,10 +1,12 @@
-import os
+from importlib import import_module
+from pathlib import Path
 from typing import Type
 from fastapi import FastAPI
-from importlib import import_module
+from application.config import PROJECT_ROOT
 
-# 排除文件
-exclude_file: list = ["__init__.py", "__pycache__"]
+SERVICE_DIR: Path = PROJECT_ROOT / "application" / "service"
+EXCEPTION_DIR: Path = PROJECT_ROOT / "application" / "exception"
+MIDDLEWARE_DIR: Path = PROJECT_ROOT / "application" / "middleware"
 
 
 def register_admin() -> None:
@@ -12,17 +14,9 @@ def register_admin() -> None:
     自动注册各后台管理
     :return:
     """
-    for module in os.listdir(path="application/service"):
-        # 跳过排除文件
-        if module in exclude_file:
-            continue
-        # 定义后台管理名称
-        admin_name: str = "Admin"
-        # 跳过非后台管理模块
-        if not os.path.exists(f"application/service/{module}/{admin_name}.py"):
-            continue
-        # 导入后台管理
-        import_module(name=f"application.service.{module}.{admin_name}")
+    for module in sorted(SERVICE_DIR.iterdir()):
+        if module.is_dir() and (module / "Admin.py").is_file():
+            import_module(name=f"application.service.{module.name}.Admin")
 
 
 def register_routers(app: FastAPI) -> None:
@@ -31,19 +25,13 @@ def register_routers(app: FastAPI) -> None:
     :param app: Fastapi对象
     :return:
     """
-    for module in os.listdir(path="application/service"):
-        # 跳过排除文件
-        if module in exclude_file:
-            continue
-        # 定义控制器名称
-        controller_name: str = "Controller"
-        # 跳过非控制器模块
-        if not os.path.exists(f"application/service/{module}/{controller_name}.py"):
-            continue
-        # 导入控制器
-        controller: object = import_module(name=f"application.service.{module}.{controller_name}")
-        if hasattr(controller, "router"):
-            app.include_router(router=controller.router)
+    for module in sorted(SERVICE_DIR.iterdir()):
+        if module.is_dir() and (module / "Controller.py").is_file():
+            controller: object = import_module(
+                name=f"application.service.{module.name}.Controller"
+            )
+            if hasattr(controller, "router"):
+                app.include_router(router=controller.router)
 
 
 def register_exceptions(app: FastAPI) -> None:
@@ -52,12 +40,11 @@ def register_exceptions(app: FastAPI) -> None:
     :param app: Fastapi对象
     :return:
     """
-    for module in os.listdir(path="application/exception"):
-        # 跳过__init__.py文件
-        if module in ["__init__.py", "__pycache__"]:
+    for module in sorted(EXCEPTION_DIR.glob("*.py")):
+        if module.name == "__init__.py":
             continue
-        exception: object = import_module(name=f"application.exception.{module[:-3]}")
-        exception_class: Type[Exception] = getattr(exception, module[:-3])
+        exception: object = import_module(name=f"application.exception.{module.stem}")
+        exception_class: Type[Exception] = getattr(exception, module.stem)
         if hasattr(exception_class, "exception_handler"):
             app.add_exception_handler(exc_class_or_status_code=exception_class,
                                       handler=exception_class.exception_handler)
@@ -69,12 +56,11 @@ def register_middleware(app: FastAPI) -> None:
     :param app: Fastapi对象
     :return:
     """
-    for module in os.listdir(path="application/middleware"):
-        # 跳过__init__.py文件
-        if module in ["__init__.py", "__pycache__"]:
+    for module in sorted(MIDDLEWARE_DIR.glob("*.py")):
+        if module.name == "__init__.py":
             continue
-        middleware: object = import_module(name=f"application.middleware.{module[:-3]}")
-        middleware_class: object = getattr(middleware, module[:-3])
+        middleware: object = import_module(name=f"application.middleware.{module.stem}")
+        middleware_class: object = getattr(middleware, module.stem)
         app.add_middleware(middleware_class=middleware_class)
 
 

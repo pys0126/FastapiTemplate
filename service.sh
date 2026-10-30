@@ -38,6 +38,7 @@ Overrides:
   PYTHON_BIN=/path/to/python
   APP_ENTRY=/path/to/main.py
   APP_MODE=pro
+  APP_CONFIG=/path/to/config.yaml
   PID_FILE=/path/to/app.pid
   LOG_DIR=/path/to/logs
   STOP_TIMEOUT=15
@@ -115,10 +116,14 @@ start_app() {
     echo "App entry not found: ${APP_ENTRY}" >&2
     return 1
   }
-  [[ -f "${SCRIPT_DIR}/config.yaml" ]] || {
-    echo "config.yaml not found." >&2
+  local config_file="${APP_CONFIG:-${SCRIPT_DIR}/config.yaml}"
+  [[ -f "${config_file}" ]] || {
+    echo "Config file not found: ${config_file}" >&2
     return 1
   }
+  # 启动脚本会切换工作目录，先将自定义配置路径转成绝对路径。
+  APP_CONFIG="$(cd "$(dirname "${config_file}")" && pwd)/$(basename "${config_file}")"
+  export APP_CONFIG
   resolve_runner
   mkdir -p "${RUNTIME_DIR}" "${LOG_DIR}"
   remove_stale_pid
